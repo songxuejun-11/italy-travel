@@ -1,0 +1,156 @@
+[
+  {
+    "id": 1787975690634,
+    "date": "9/24",
+    "category": "交通",
+    "sub_category": "巴勒莫机场→市区",
+    "amount": 6.8,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 1.13,
+    "note": "火车票"
+  },
+  {
+    "id": 1787975690635,
+    "date": "9/24-25",
+    "category": "住宿",
+    "sub_category": "巴勒莫公寓",
+    "amount": 1791.54,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 298.59,
+    "note": "详见飞书"
+  },
+  {
+    "id": 1787975690636,
+    "date": "9/24",
+    "category": "餐饮",
+    "sub_category": "Ballarò市场",
+    "amount": 50,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 8.33,
+    "note": "人均消费"
+  },
+  {
+    "id": 1787975690637,
+    "date": "9/25",
+    "category": "交通",
+    "sub_category": "巴勒莫→陶尔米纳",
+    "amount": 20,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 3.33,
+    "note": "大巴换乘2次"
+  },
+  {
+    "id": 1787975690638,
+    "date": "9/26",
+    "category": "交通",
+    "sub_category": "贝拉岛缆车",
+    "amount": 10,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 1.67,
+    "note": "往返"
+  },
+  {
+    "id": 1787975690639,
+    "date": "9/27",
+    "category": "交通",
+    "sub_category": "陶尔米纳→锡拉库萨",
+    "amount": 80,
+    "currency": "RMB",
+    "split_count": 6,
+    "per_person": 13.33,
+    "note": "火车往返"
+  },
+  {
+    "id": 1787975690640,
+    "date": "9/28",
+    "category": "交通",
+    "sub_category": "过夜火车→那不勒斯",
+    "amount": 50,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 8.33,
+    "note": "估算"
+  },
+  {
+    "id": 1787975690641,
+    "date": "9/29",
+    "category": "交通",
+    "sub_category": "那不勒斯→索伦托",
+    "amount": 4.6,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 0.77,
+    "note": "近郊火车"
+  },
+  {
+    "id": 1787975690642,
+    "date": "9/29",
+    "category": "其他",
+    "sub_category": "那不勒斯行李寄存",
+    "amount": 5,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 0.83,
+    "note": "每件/自然日"
+  },
+  {
+    "id": 1787975690643,
+    "date": "9/30",
+    "category": "门票",
+    "sub_category": "圣塞维诺小堂",
+    "amount": 12,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 2,
+    "note": "需预约"
+  },
+  {
+    "id": 1787975690644,
+    "date": "10/1",
+    "category": "门票",
+    "sub_category": "庞贝古城",
+    "amount": 500,
+    "currency": "RMB",
+    "split_count": 6,
+    "per_person": 83.33,
+    "note": "含讲解"
+  },
+  {
+    "id": 1787975690645,
+    "date": "10/3",
+    "category": "门票",
+    "sub_category": "梵蒂冈博物馆",
+    "amount": 0,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 0,
+    "note": "免费日"
+  },
+  {
+    "id": 1787975690646,
+    "date": "10/4",
+    "category": "门票",
+    "sub_category": "博尔盖塞美术馆",
+    "amount": 0,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 0,
+    "note": "免费日"
+  },
+  {
+    "id": 1787975690647,
+    "date": "10/4",
+    "category": "门票",
+    "sub_category": "罗马斗兽场",
+    "amount": 18,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 3,
+    "note": "通票"
+  }
+]
