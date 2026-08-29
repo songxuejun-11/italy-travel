@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, Alert, LayoutAnimation,
+  TextInput, Alert, LayoutAnimation, Platform,
 } from 'react-native';
 import { Screen } from '@/components/Screen';
 import {
@@ -48,10 +48,17 @@ export default function PreparationScreen() {
   };
 
   const handleDelete = (item: ChecklistItem) => {
-    Alert.alert('删除', `确定删除"${item.label}"？`, [
-      { text: '取消', style: 'cancel' },
-      { text: '删除', style: 'destructive', onPress: async () => { await deleteChecklistItem(item.id); loadItems(); } },
-    ]);
+    const doDelete = async () => { await deleteChecklistItem(item.id); loadItems(); };
+    if (Platform.OS === 'web') {
+      if (/* @ts-ignore */ typeof window !== 'undefined' && window.confirm(`确定删除"${item.label}"？`)) {
+        doDelete();
+      }
+    } else {
+      Alert.alert('删除', `确定删除"${item.label}"？`, [
+        { text: '取消', style: 'cancel' },
+        { text: '删除', style: 'destructive', onPress: doDelete },
+      ]);
+    }
   };
 
   const checkedCount = items.filter(i => i.checked).length;

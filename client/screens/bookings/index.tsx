@@ -46,13 +46,17 @@ export default function BookingsScreen() {
   const handleEdit = (item: Booking) => { setEditingItem(item); setModalVisible(true); };
 
   const handleDelete = (id: number) => {
-    Alert.alert('删除', '确定删除此预定？', [
-      { text: '取消', style: 'cancel' },
-      { text: '删除', style: 'destructive', onPress: async () => {
-        await deleteBooking(id);
-        await loadData();
-      }},
-    ]);
+    const doDelete = async () => { await deleteBooking(id); await loadData(); };
+    if (Platform.OS === 'web') {
+      if (/* @ts-ignore */ typeof window !== 'undefined' && window.confirm('确定删除此预定？')) {
+        doDelete();
+      }
+    } else {
+      Alert.alert('删除', '确定删除此预定？', [
+        { text: '取消', style: 'cancel' },
+        { text: '删除', style: 'destructive', onPress: doDelete },
+      ]);
+    }
   };
 
   const handleSave = async (data: BookingForm) => {

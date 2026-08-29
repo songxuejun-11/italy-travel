@@ -62,10 +62,17 @@ export default function ExpensesScreen() {
   const handleAdd = () => { setEditing(null); setModalVisible(true); };
   const handleEdit = (item: Expense) => { setEditing(item); setModalVisible(true); };
   const handleDelete = (item: Expense) => {
-    Alert.alert('删除', `确定删除"${item.sub_category}"？`, [
-      { text: '取消', style: 'cancel' },
-      { text: '删除', style: 'destructive', onPress: async () => { await deleteExpense(item.id); loadExpenses(); } },
-    ]);
+    const doDelete = async () => { await deleteExpense(item.id); loadExpenses(); };
+    if (Platform.OS === 'web') {
+      if (/* @ts-ignore */ typeof window !== 'undefined' && window.confirm(`确定删除"${item.sub_category}"？`)) {
+        doDelete();
+      }
+    } else {
+      Alert.alert('删除', `确定删除"${item.sub_category}"？`, [
+        { text: '取消', style: 'cancel' },
+        { text: '删除', style: 'destructive', onPress: doDelete },
+      ]);
+    }
   };
 
   return (

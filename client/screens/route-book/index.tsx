@@ -290,10 +290,16 @@ export default function RouteBookScreen() {
                   onPress={() => handleLocPress(loc.name)}
                   onUpdate={(updates) => updateLocation(i, updates)}
                   onDelete={() => {
-                    Alert.alert('删除', `确定删除"${loc.name}"？`, [
-                      { text: '取消', style: 'cancel' },
-                      { text: '删除', style: 'destructive', onPress: () => deleteLocation(i) },
-                    ]);
+                    if (Platform.OS === 'web') {
+                      if (/* @ts-ignore */ typeof window !== 'undefined' && window.confirm(`确定删除"${loc.name}"？`)) {
+                        deleteLocation(i);
+                      }
+                    } else {
+                      Alert.alert('删除', `确定删除"${loc.name}"？`, [
+                        { text: '取消', style: 'cancel' },
+                        { text: '删除', style: 'destructive', onPress: () => deleteLocation(i) },
+                      ]);
+                    }
                   }} />
               ))}
               <AddItemButton onPress={addLocation} label="添加地点" />
