@@ -116,26 +116,28 @@ export default function ExpensesScreen() {
             </TouchableOpacity>
           </View>
           {expenses.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.expenseItem}
-              onPress={() => handleEdit(item)}
-              onLongPress={() => handleDelete(item)}
-            >
-              <View style={[styles.expenseIcon, { backgroundColor: `${CATEGORY_COLORS[item.category]}15` }]}>
-                <FontAwesome6 name={CATEGORY_ICONS[item.category] as any} size={14} color={CATEGORY_COLORS[item.category]} />
+            <View key={item.id} style={styles.expenseItem}>
+              <TouchableOpacity style={styles.expenseItemLeft} onPress={() => handleEdit(item)}>
+                <View style={[styles.expenseIcon, { backgroundColor: `${CATEGORY_COLORS[item.category]}15` }]}>
+                  <FontAwesome6 name={CATEGORY_ICONS[item.category] as any} size={14} color={CATEGORY_COLORS[item.category]} />
+                </View>
+                <View style={styles.expenseInfo}>
+                  <Text style={styles.expenseName}>{item.sub_category}</Text>
+                  <Text style={styles.expenseMeta}>{item.date} · {item.category}{item.note ? ` · ${item.note}` : ''}</Text>
+                </View>
+              </TouchableOpacity>
+              <View style={styles.expenseRight}>
+                <View style={styles.expenseAmount}>
+                  <Text style={styles.expenseAmountText}>
+                    {item.currency === 'EUR' ? '€' : '¥'}{item.amount.toFixed(item.amount % 1 === 0 ? 0 : 1)}
+                  </Text>
+                  <Text style={styles.expensePerPerson}>人均 {item.currency === 'EUR' ? '€' : '¥'}{item.per_person.toFixed(1)}</Text>
+                </View>
+                <TouchableOpacity style={styles.expenseDeleteBtn} onPress={() => handleDelete(item)}>
+                  <FontAwesome6 name="trash-can" size={13} color={COLORS.danger} />
+                </TouchableOpacity>
               </View>
-              <View style={styles.expenseInfo}>
-                <Text style={styles.expenseName}>{item.sub_category}</Text>
-                <Text style={styles.expenseMeta}>{item.date} · {item.category}{item.note ? ` · ${item.note}` : ''}</Text>
-              </View>
-              <View style={styles.expenseAmount}>
-                <Text style={styles.expenseAmountText}>
-                  {item.currency === 'EUR' ? '€' : '¥'}{item.amount.toFixed(item.amount % 1 === 0 ? 0 : 1)}
-                </Text>
-                <Text style={styles.expensePerPerson}>人均 {item.currency === 'EUR' ? '€' : '¥'}{item.per_person.toFixed(1)}</Text>
-              </View>
-            </TouchableOpacity>
+            </View>
           ))}
         </View>
       </ScrollView>
@@ -308,6 +310,8 @@ const styles = StyleSheet.create({
     shadowColor: COLORS.primary, shadowOpacity: 0.03, shadowRadius: 4, shadowOffset: { width: 0, height: 1 },
     elevation: 1,
   },
+  expenseItemLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  expenseRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   expenseIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   expenseInfo: { flex: 1 },
   expenseName: { fontSize: 14, fontWeight: '600', color: COLORS.text },
@@ -315,6 +319,7 @@ const styles = StyleSheet.create({
   expenseAmount: { alignItems: 'flex-end' },
   expenseAmountText: { fontSize: 15, fontWeight: '700', color: COLORS.text },
   expensePerPerson: { fontSize: 11, color: COLORS.muted, marginTop: 2 },
+  expenseDeleteBtn: { padding: 8, marginLeft: 4 },
 
   // Modal
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },

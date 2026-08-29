@@ -91,7 +91,9 @@ export default function PreparationScreen() {
                 {item.label}
               </Text>
               <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
-                <FontAwesome6 name="trash-can" size={12} color={COLORS.muted} />
+                <View style={styles.deleteBtnInner}>
+                  <FontAwesome6 name="trash-can" size={13} color={COLORS.muted} />
+                </View>
               </TouchableOpacity>
             </View>
           ))}
@@ -160,7 +162,11 @@ const styles = StyleSheet.create({
   checkboxChecked: { backgroundColor: COLORS.success, borderColor: COLORS.success },
   itemLabel: { fontSize: 15, color: COLORS.text, flex: 1, fontWeight: '500' },
   itemLabelChecked: { textDecorationLine: 'line-through', color: COLORS.muted },
-  deleteBtn: { padding: 8 },
+  deleteBtn: { padding: 4 },
+  deleteBtnInner: {
+    width: 30, height: 30, borderRadius: 8, backgroundColor: '#FFEBEE',
+    justifyContent: 'center', alignItems: 'center',
+  },
 
   addContainer: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginTop: 16, gap: 8,

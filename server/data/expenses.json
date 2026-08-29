@@ -152,5 +152,16 @@
     "split_count": 6,
     "per_person": 3,
     "note": "通票"
+  },
+  {
+    "id": 1787982353438,
+    "date": "8/29",
+    "category": "其他",
+    "sub_category": "测试",
+    "amount": 10,
+    "currency": "EUR",
+    "split_count": 6,
+    "per_person": 1.67,
+    "note": ""
   }
 ]

@@ -70,5 +70,11 @@
     "label": "洗漱用品",
     "checked": 0,
     "sort_order": 12
+  },
+  {
+    "id": 1787982353437,
+    "label": "测试",
+    "checked": 0,
+    "sort_order": 13
   }
 ]
