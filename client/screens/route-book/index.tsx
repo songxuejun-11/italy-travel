@@ -392,12 +392,6 @@ function LocationCard({ location, index, isHighlighted, onPress, onUpdate, onDel
         </View>
       ) : null}
 
-      {location.intro ? (
-        <View style={styles.locIntroDefault}>
-          <Text style={styles.locIntroTextDefault}>{location.intro}</Text>
-        </View>
-      ) : null}
-
       <View style={styles.locActions}>
         <TouchableOpacity style={styles.locNavBtn} onPress={() => {
           const q = location.lat && location.lng ? `${location.lat},${location.lng}` : `${location.name} Italy`;
