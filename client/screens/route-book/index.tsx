@@ -392,6 +392,12 @@ function LocationCard({ location, index, isHighlighted, onPress, onUpdate, onDel
         </View>
       ) : null}
 
+      {location.intro ? (
+        <View style={styles.locIntroDefault}>
+          <Text style={styles.locIntroTextDefault}>{location.intro}</Text>
+        </View>
+      ) : null}
+
       <View style={styles.locActions}>
         <TouchableOpacity style={styles.locNavBtn} onPress={() => {
           const q = location.lat && location.lng ? `${location.lat},${location.lng}` : `${location.name} Italy`;
@@ -586,6 +592,8 @@ const styles = StyleSheet.create({
   locActionText: { fontSize: 11, color: C.muted },
   locIntro: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border },
   locIntroText: { fontSize: 13, color: C.muted, lineHeight: 20 },
+  locIntroDefault: { marginTop: 8, paddingHorizontal: 4, backgroundColor: '#F5F0E8', borderRadius: 8, padding: 10 },
+  locIntroTextDefault: { fontSize: 13, color: '#5A4A3A', lineHeight: 20 },
 
   transportItem: { marginBottom: 12, backgroundColor: C.bg, borderRadius: 12, padding: 12 },
   transportHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
