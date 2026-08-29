@@ -9,6 +9,7 @@ import {
   type ChecklistItem,
 } from '@/services/api';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { useDataPolling } from '@/hooks/useDataPolling';
 
 const COLORS = {
   primary: '#C75B39',
@@ -31,6 +32,7 @@ export default function PreparationScreen() {
   }, []);
 
   useEffect(() => { loadItems(); }, [loadItems]);
+  useDataPolling(loadItems, 5000);
 
   const handleToggle = async (item: ChecklistItem) => {
     await updateChecklistItem({ ...item, checked: item.checked ? 0 : 1 });

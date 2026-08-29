@@ -9,6 +9,7 @@ import {
   type Expense, type CreateExpense,
 } from '@/services/api';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { useDataPolling } from '@/hooks/useDataPolling';
 
 const COLORS = {
   primary: '#C75B39',
@@ -43,6 +44,7 @@ export default function ExpensesScreen() {
   }, []);
 
   useEffect(() => { loadExpenses(); }, [loadExpenses]);
+  useDataPolling(loadExpenses, 5000);
 
   // Summary
   const totalEUR = expenses.filter(e => e.currency === 'EUR').reduce((s, e) => s + e.amount, 0);

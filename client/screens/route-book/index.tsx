@@ -1,141 +1,158 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  Platform, LayoutAnimation,
+  Platform, LayoutAnimation, TextInput, Alert, Modal,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Screen } from '@/components/Screen';
-import { getDays, updateDayContent, type Day, type DayContent, type Location } from '@/services/api';
+import { getDays, updateDayContent, type Day, type DayContent, type Location, type TransportItem } from '@/services/api';
 import { FontAwesome6 } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EditableText, EditableListItem, AddItemButton } from '@/components/EditableFields';
+import { useDataPolling } from '@/hooks/useDataPolling';
 
-const COLORS = {
-  primary: '#C75B39',
-  secondary: '#2B5F83',
-  gold: '#D4A853',
-  bg: '#FAF5EF',
-  surface: '#FFFCF7',
-  text: '#2C1810',
-  muted: '#7A6B5D',
-  border: '#E8DDD0',
-  success: '#5B8C3E',
+const C = {
+  primary: '#C75B39', secondary: '#2B5F83', gold: '#D4A853',
+  bg: '#FAF5EF', surface: '#FFFCF7', text: '#2C1810',
+  muted: '#7A6B5D', border: '#E8DDD0', success: '#5B8C3E', danger: '#B83232',
 };
 
 export default function RouteBookScreen() {
   const [days, setDays] = useState<Day[]>([]);
   const [activeDay, setActiveDay] = useState(0);
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [highlightedLoc, setHighlightedLoc] = useState<string | null>(null);
+  const [packingChecked, setPackingChecked] = useState<Record<string, boolean>>({});
   const insets = useSafeAreaInsets();
-  const dayScrollViewRef = useRef<ScrollView>(null);
   const webviewRef = useRef<WebView>(null);
 
-  useEffect(() => {
-    getDays().then((d) => {
-      setDays(d);
-      if (d.length > 0) setActiveDay(0);
-    });
+  const loadData = useCallback(() => {
+    getDays().then(setDays).catch(console.error);
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+  useDataPolling(loadData, 5000);
 
   const currentDay = days[activeDay];
   const content: DayContent = currentDay ? JSON.parse(currentDay.content_json) : {};
 
-  const toggleSection = useCallback((key: string) => {
+  const saveContent = useCallback(async (newContent: DayContent) => {
+    if (!currentDay) return;
+    const days2 = [...days];
+    const idx = days2.findIndex(d => d.id === currentDay.id);
+    if (idx >= 0) {
+      days2[idx] = { ...days2[idx], content_json: JSON.stringify(newContent) };
+      setDays(days2);
+    }
+    await updateDayContent(currentDay.id, newContent);
+  }, [currentDay, days]);
+
+  const toggle = useCallback((key: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+    setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
-  const handleLocPress = useCallback((locName: string) => {
-    setHighlightedLoc(locName);
-    // Send message to WebView to highlight marker
-    if (webviewRef.current) {
-      webviewRef.current.postMessage(JSON.stringify({ type: 'highlight', name: locName }));
-    }
-    // Auto-clear highlight after 3s
+  const handleLocPress = useCallback((name: string) => {
+    setHighlightedLoc(name);
     setTimeout(() => setHighlightedLoc(null), 3000);
   }, []);
 
-  const handleWebViewMessage = useCallback((event: { nativeEvent: { data: string } }) => {
-    try {
-      const msg = JSON.parse(event.nativeEvent.data);
-      if (msg.type === 'markerClick') {
-        setHighlightedLoc(msg.name);
-        setTimeout(() => setHighlightedLoc(null), 3000);
-      }
-    } catch { /* ignore */ }
-  }, []);
+  // Day content mutation helpers
+  const updateLocation = (locIdx: number, updates: Partial<Location>) => {
+    const locs = [...(content.locations || [])];
+    locs[locIdx] = { ...locs[locIdx], ...updates };
+    saveContent({ ...content, locations: locs });
+  };
 
-  // Build map HTML
-  const buildMapHtml = useCallback(() => {
-    const locations = content.locations || [];
-    if (locations.length === 0) return '<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#7A6B5D;"><p>今日暂无地点</p></body></html>';
+  const deleteLocation = (locIdx: number) => {
+    const locs = (content.locations || []).filter((_, i) => i !== locIdx);
+    saveContent({ ...content, locations: locs });
+  };
 
-    const markers = locations.filter(l => l.lat && l.lng).map((l, i) => {
-      const isHighlighted = highlightedLoc === l.name;
-      const color = isHighlighted ? '#C75B39' : '#2B5F83';
-      const size = isHighlighted ? 14 : 10;
-      return `L.marker([${l.lat}, ${l.lng}], {
-        icon: L.divIcon({
-          className: 'custom-marker',
-          html: '<div style="width:${size}px;height:${size}px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:8px;font-weight:bold;">${i + 1}</div>',
-          iconSize: [${size + 4}, ${size + 4}],
-        })
-      }).bindPopup('${l.name}').on('click', function() { window.ReactNativeWebView.postMessage(JSON.stringify({type:'markerClick',name:'${l.name}'})); });`;
+  const addLocation = () => {
+    const locs = [...(content.locations || [])];
+    locs.push({ name: '新地点', nameIt: '', cost: '免费', tags: ['景点'], order: locs.length + 1 });
+    saveContent({ ...content, locations: locs });
+  };
+
+  const updateTransport = (type: 'intercity' | 'intracity', tIdx: number, updates: Partial<TransportItem>) => {
+    const t = content.transport || { intercity: [], intracity: [] };
+    const list = [...t[type]];
+    list[tIdx] = { ...list[tIdx], ...updates };
+    saveContent({ ...content, transport: { ...t, [type]: list } });
+  };
+
+  const deleteTransport = (type: 'intercity' | 'intracity', tIdx: number) => {
+    const t = content.transport || { intercity: [], intracity: [] };
+    const list = t[type].filter((_, i) => i !== tIdx);
+    saveContent({ ...content, transport: { ...t, [type]: list } });
+  };
+
+  const addTransport = (type: 'intercity' | 'intracity') => {
+    const t = content.transport || { intercity: [], intracity: [] };
+    const list = [...t[type]];
+    list.push(type === 'intercity' ? { desc: '新城际交通', duration: '', cost: '' } : { mode: '新市内交通', details: '' });
+    saveContent({ ...content, transport: { ...t, [type]: list } });
+  };
+
+  const updateTips = (newItems: string[]) => {
+    const tips = content.tips || { items: [], packingList: [] };
+    saveContent({ ...content, tips: { ...tips, items: newItems } });
+  };
+
+  const addTip = () => {
+    const tips = content.tips || { items: [], packingList: [] };
+    saveContent({ ...content, tips: { ...tips, items: [...tips.items, '新提示'] } });
+  };
+
+  const updateAccommodation = (updates: Record<string, unknown>) => {
+    const acc = content.accommodation || {};
+    saveContent({ ...content, accommodation: { ...acc, ...updates } });
+  };
+
+  // Map HTML builder
+  const buildMapHtml = () => {
+    const locs = content.locations || [];
+    const withCoords = locs.filter(l => l.lat && l.lng);
+    if (withCoords.length === 0) return '<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;color:#7A6B5D;"><p>今日暂无地点</p></body></html>';
+    const markers = withCoords.map((l, i) => {
+      const hl = highlightedLoc === l.name;
+      const color = hl ? '#C75B39' : '#2B5F83';
+      const sz = hl ? 14 : 10;
+      return `L.marker([${l.lat},${l.lng}],{icon:L.divIcon({className:'m',html:'<div style=\"width:${sz}px;height:${sz}px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:8px;font-weight:bold;\">${i+1}</div>',iconSize:[${sz+4},${sz+4}]})}).bindPopup('${l.name}').on('click',function(){window.ReactNativeWebView.postMessage(JSON.stringify({type:'mc',name:'${l.name}'}));});`;
     }).join('\n');
+    const pts = withCoords.map(l => `[${l.lat},${l.lng}]`).join(',');
+    const ctr = withCoords[0];
+    return `<!DOCTYPE html><html><head><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><style>body{margin:0;padding:0;}#map{width:100%;height:100vh;}</style></head><body><div id="map"></div><script>var map=L.map('map',{zoomControl:false}).setView([${ctr.lat},${ctr.lng}],13);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'OSM'}).addTo(map);${markers}${withCoords.length > 1 ? `L.polyline([${pts}],{color:'#C75B39',weight:3,opacity:0.7,dashArray:'8,8'}).addTo(map);` : ''}</script></body></html>`;
+  };
 
-    const pathPoints = locations.filter(l => l.lat && l.lng).map(l => `[${l.lat}, ${l.lng}]`).join(',');
-    const center = locations.find(l => l.lat && l.lng);
-
-    return `<!DOCTYPE html><html><head>
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-      <style>body{margin:0;padding:0;}#map{width:100%;height:100vh;}</style>
-    </head><body>
-      <div id="map"></div>
-      <script>
-        var map = L.map('map',{zoomControl:false}).setView([${center?.lat || 41.9}, ${center?.lng || 12.5}], 13);
-        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'OSM'}).addTo(map);
-        ${markers}
-        ${locations.filter(l => l.lat && l.lng).length > 1 ? `L.polyline([${pathPoints}],{color:'#C75B39',weight:3,opacity:0.7,dashArray:'8,8'}).addTo(map);` : ''}
-        document.addEventListener('message', function(e) {
-          var msg = JSON.parse(e.data);
-          if(msg.type==='highlight'){/* handle highlight */}
-        });
-      </script>
-    </body></html>`;
-  }, [content, highlightedLoc]);
+  const handleWebViewMessage = (e: { nativeEvent: { data: string } }) => {
+    try {
+      const msg = JSON.parse(e.nativeEvent.data);
+      if (msg.type === 'mc') handleLocPress(msg.name);
+    } catch { /* ignore */ }
+  };
 
   if (!currentDay) {
     return <Screen><View style={styles.loading}><Text style={styles.loadingText}>加载中...</Text></View></Screen>;
   }
 
   const acc = content.accommodation;
-  const isAccExpanded = expandedSections['acc'] || false;
-  const isTipsExpanded = expandedSections['tips'] || false;
+  const tips = content.tips;
+  const transport = content.transport;
 
   return (
     <Screen>
       <View style={[styles.container, { paddingTop: insets.top }]}>
         {/* Day Tabs */}
-        <View style={styles.dayTabsContainer}>
-          <ScrollView
-            ref={dayScrollViewRef}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.dayTabsContent}
-          >
+        <View style={styles.dayTabsWrap}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.dayTabsContent}>
             {days.map((d, i) => (
-              <TouchableOpacity
-                key={d.id}
-                style={[styles.dayTab, i === activeDay && styles.dayTabActive]}
-                onPress={() => { setActiveDay(i); setExpandedSections({}); setHighlightedLoc(null); }}
-              >
-                <Text style={[styles.dayTabText, i === activeDay && styles.dayTabTextActive]}>
-                  Day {d.day_number}
-                </Text>
-                <Text style={[styles.dayTabSub, i === activeDay && styles.dayTabSubActive]}>
-                  {d.date}
-                </Text>
+              <TouchableOpacity key={d.id} style={[styles.dayTab, i === activeDay && styles.dayTabActive]}
+                onPress={() => { setActiveDay(i); setExpanded({}); setHighlightedLoc(null); }}>
+                <Text style={[styles.dayTabText, i === activeDay && styles.dayTabTextActive]}>Day {d.day_number}</Text>
+                <Text style={[styles.dayTabSub, i === activeDay && styles.dayTabSubActive]}>{d.date}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -143,132 +160,117 @@ export default function RouteBookScreen() {
 
         {/* Day Header */}
         <View style={styles.dayHeader}>
-          <Text style={styles.dayHeaderCity}>
-            {currentDay.city} <Text style={styles.dayHeaderCityEn}>{currentDay.city_en}</Text>
-          </Text>
-          <Text style={styles.dayHeaderDate}>
-            {currentDay.date} {currentDay.weekday}
-          </Text>
+          <Text style={styles.dayHeaderCity}>{currentDay.city} <Text style={styles.dayHeaderCityEn}>{currentDay.city_en}</Text></Text>
+          <Text style={styles.dayHeaderDate}>{currentDay.date} {currentDay.weekday}</Text>
         </View>
 
-        {/* Content */}
         <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
           {/* Overview */}
           {content.overview && (
             <View style={styles.overviewBlock}>
               <View style={styles.overviewHighlight}>
-                <Text style={styles.overviewText}>{content.overview.text}</Text>
+                <EditableText value={content.overview.text} multiline
+                  onSave={(v) => saveContent({ ...content, overview: { ...content.overview!, text: v } })} />
               </View>
-              {content.overview.cityIntro ? (
-                <TouchableOpacity onPress={() => toggleSection('cityIntro')} style={styles.collapsibleHeader}>
-                  <Text style={styles.collapsibleTitle}>城市介绍</Text>
-                  <FontAwesome6
-                    name={expandedSections['cityIntro'] ? 'chevron-up' : 'chevron-down'}
-                    size={12} color={COLORS.muted}
-                  />
-                </TouchableOpacity>
-              ) : null}
-              {expandedSections['cityIntro'] && content.overview.cityIntro && (
-                <Text style={styles.cityIntroText}>{content.overview.cityIntro}</Text>
+              {content.overview.cityIntro !== undefined && (
+                <>
+                  <TouchableOpacity onPress={() => toggle('cityIntro')} style={styles.sectionToggle}>
+                    <Text style={styles.sectionToggleTitle}>城市介绍</Text>
+                    <FontAwesome6 name={expanded['cityIntro'] ? 'chevron-up' : 'chevron-down'} size={12} color={C.muted} />
+                  </TouchableOpacity>
+                  {expanded['cityIntro'] && (
+                    <EditableText value={content.overview.cityIntro || ''} multiline
+                      onSave={(v) => saveContent({ ...content, overview: { ...content.overview!, cityIntro: v } })} />
+                  )}
+                </>
               )}
             </View>
           )}
 
           {/* Accommodation */}
           {acc && !acc.sameAsPrevious && (
-            <View style={styles.sectionBlock}>
-              <TouchableOpacity onPress={() => toggleSection('acc')} style={styles.collapsibleHeader}>
-                <View style={styles.sectionIconWrap}>
-                  <FontAwesome6 name="house" size={14} color={COLORS.primary} />
-                </View>
-                <View style={styles.sectionHeaderContent}>
-                  <Text style={styles.sectionLabel}>住宿</Text>
-                  <Text style={styles.accCity}>{acc.city} · {acc.address?.split(',')[0]}</Text>
-                </View>
-                <View style={styles.sectionHeaderRight}>
-                  <TouchableOpacity
-                    style={styles.navButton}
-                    onPress={(e) => {
-                      e.stopPropagation?.();
-                      if (acc.address) {
-                        const url = Platform.OS === 'web'
-                          ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(acc.address)}`
-                          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(acc.address)}`;
-                        if (Platform.OS === 'web') {
-                          // @ts-ignore web only
-                          window.open(url, '_blank');
-                        }
-                      }
-                    }}
-                  >
-                    <FontAwesome6 name="location-arrow" size={12} color={COLORS.secondary} />
-                    <Text style={styles.navButtonText}>导航</Text>
+            <View style={styles.section}>
+              <TouchableOpacity onPress={() => toggle('acc')} style={styles.sectionHeader}>
+                <View style={styles.iconWrap}><FontAwesome6 name="house" size={14} color={C.primary} /></View>
+                <Text style={styles.sectionLabel}>住宿</Text>
+                <View style={styles.sectionRight}>
+                  <TouchableOpacity style={styles.navBtn} onPress={() => {
+                    if (acc.address) {
+                      const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(acc.address)}`;
+                      if (Platform.OS === 'web') { /* @ts-ignore */ window.open(url, '_blank'); }
+                    }
+                  }}>
+                    <FontAwesome6 name="location-arrow" size={11} color={C.secondary} />
+                    <Text style={styles.navBtnText}>导航</Text>
                   </TouchableOpacity>
-                  <FontAwesome6
-                    name={isAccExpanded ? 'chevron-up' : 'chevron-down'}
-                    size={12} color={COLORS.muted}
-                  />
+                  <FontAwesome6 name={expanded['acc'] ? 'chevron-up' : 'chevron-down'} size={12} color={C.muted} />
                 </View>
               </TouchableOpacity>
-              {isAccExpanded && (
-                <View style={styles.expandedContent}>
-                  {acc.checkIn && <Text style={styles.detailText}>入住时间：{acc.checkIn}</Text>}
-                  {acc.condition && <Text style={styles.detailText}>住宿条件：{acc.condition}</Text>}
-                  {acc.checkInMethod && <Text style={styles.detailText}>入住方式：{acc.checkInMethod}</Text>}
-                  {acc.tips && <Text style={styles.detailTextWarn}>Tips: {acc.tips}</Text>}
+              {expanded['acc'] && (
+                <View style={styles.expanded}>
+                  <View style={styles.fieldRow}><Text style={styles.fieldLabel}>入住时间</Text>
+                    <EditableText value={acc.checkIn || ''} onSave={(v) => updateAccommodation({ checkIn: v })} style={{ flex: 1 }} /></View>
+                  <View style={styles.fieldRow}><Text style={styles.fieldLabel}>地址</Text>
+                    <EditableText value={acc.address || ''} onSave={(v) => updateAccommodation({ address: v })} style={{ flex: 1 }} /></View>
+                  <View style={styles.fieldRow}><Text style={styles.fieldLabel}>条件</Text>
+                    <EditableText value={acc.condition || ''} multiline onSave={(v) => updateAccommodation({ condition: v })} style={{ flex: 1 }} /></View>
+                  <View style={styles.fieldRow}><Text style={styles.fieldLabel}>入住方式</Text>
+                    <EditableText value={acc.checkInMethod || ''} onSave={(v) => updateAccommodation({ checkInMethod: v })} style={{ flex: 1 }} placeholder="点击编辑" /></View>
+                  {acc.tips && <View style={styles.fieldRow}><Text style={styles.fieldLabel}>备注</Text>
+                    <EditableText value={acc.tips} multiline onSave={(v) => updateAccommodation({ tips: v })} style={{ flex: 1 }} /></View>}
                 </View>
               )}
             </View>
           )}
           {acc?.sameAsPrevious && (
-            <View style={styles.sameAccBlock}>
-              <FontAwesome6 name="house" size={12} color={COLORS.muted} />
+            <View style={styles.sameAcc}>
+              <FontAwesome6 name="house" size={12} color={C.muted} />
               <Text style={styles.sameAccText}>同前日住宿（{acc.city}）</Text>
-              <TouchableOpacity
-                style={styles.navButton}
-                onPress={() => {
-                  if (acc.address) {
-                    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(acc.address)}`;
-                    if (Platform.OS === 'web') {
-                      // @ts-ignore web only
-                      window.open(url, '_blank');
-                    }
-                  }
-                }}
-              >
-                <FontAwesome6 name="location-arrow" size={11} color={COLORS.secondary} />
-                <Text style={styles.navButtonText}>导航</Text>
+              <TouchableOpacity style={styles.navBtn} onPress={() => {
+                if (acc.address) {
+                  const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(acc.address)}`;
+                  if (Platform.OS === 'web') { /* @ts-ignore */ window.open(url, '_blank'); }
+                }
+              }}>
+                <FontAwesome6 name="location-arrow" size={11} color={C.secondary} />
+                <Text style={styles.navBtnText}>导航</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {/* Tips */}
-          {content.tips && (content.tips.items.length > 0 || content.tips.packingList?.length > 0) && (
-            <View style={styles.sectionBlock}>
-              <TouchableOpacity onPress={() => toggleSection('tips')} style={styles.collapsibleHeader}>
-                <View style={styles.sectionIconWrap}>
-                  <FontAwesome6 name="lightbulb" size={14} color={COLORS.gold} />
-                </View>
+          {tips && (
+            <View style={styles.section}>
+              <TouchableOpacity onPress={() => toggle('tips')} style={styles.sectionHeader}>
+                <View style={styles.iconWrap}><FontAwesome6 name="lightbulb" size={14} color={C.gold} /></View>
                 <Text style={styles.sectionLabel}>Tips</Text>
-                <FontAwesome6
-                  name={isTipsExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={12} color={COLORS.muted}
-                />
+                <FontAwesome6 name={expanded['tips'] ? 'chevron-up' : 'chevron-down'} size={12} color={C.muted} />
               </TouchableOpacity>
-              {isTipsExpanded && (
-                <View style={styles.expandedContent}>
-                  {content.tips.items.map((tip, i) => (
-                    <Text key={i} style={styles.tipText}>• {tip}</Text>
+              {expanded['tips'] && (
+                <View style={styles.expanded}>
+                  {(tips.items || []).map((tip, i) => (
+                    <EditableListItem key={i} value={tip} index={i}
+                      onSave={(v) => { const items = [...tips.items]; items[i] = v; updateTips(items); }}
+                      onDelete={() => { const items = tips.items.filter((_, j) => j !== i); updateTips(items); }} />
                   ))}
-                  {content.tips.packingList?.length > 0 && (
-                    <View style={styles.packingList}>
+                  <AddItemButton onPress={addTip} label="添加提示" />
+                  {/* Packing list */}
+                  {(tips.packingList?.length ?? 0) > 0 && (
+                    <View style={styles.packingSection}>
                       <Text style={styles.packingTitle}>出行带</Text>
-                      {content.tips.packingList.map((item, i) => (
-                        <View key={i} style={styles.packingItem}>
-                          <View style={styles.checkbox} />
-                          <Text style={styles.packingItemText}>{item}</Text>
-                        </View>
-                      ))}
+                      {(tips.packingList || []).map((item, i) => {
+                        const key = `${currentDay.id}-${i}`;
+                        const checked = packingChecked[key] || false;
+                        return (
+                          <TouchableOpacity key={i} style={styles.packingItem}
+                            onPress={() => setPackingChecked(prev => ({ ...prev, [key]: !prev[key] }))}>
+                            <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+                              {checked && <FontAwesome6 name="check" size={10} color="#FFF" />}
+                            </View>
+                            <Text style={[styles.packingText, checked && styles.packingTextChecked]}>{item}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
                     </View>
                   )}
                 </View>
@@ -278,90 +280,66 @@ export default function RouteBookScreen() {
 
           {/* Locations */}
           {content.locations && content.locations.length > 0 && (
-            <View style={styles.sectionBlock}>
-              <View style={styles.collapsibleHeader}>
-                <View style={styles.sectionIconWrap}>
-                  <FontAwesome6 name="map-pin" size={14} color={COLORS.primary} />
-                </View>
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.iconWrap}><FontAwesome6 name="map-pin" size={14} color={C.primary} /></View>
                 <Text style={styles.sectionLabel}>地点 ({content.locations.length})</Text>
               </View>
-              {content.locations.map((loc: Location, i: number) => (
-                <LocationCard
-                  key={i}
-                  location={loc}
-                  index={i}
-                  isHighlighted={highlightedLoc === loc.name}
+              {content.locations.map((loc, i) => (
+                <LocationCard key={i} location={loc} index={i} isHighlighted={highlightedLoc === loc.name}
                   onPress={() => handleLocPress(loc.name)}
-                />
+                  onUpdate={(updates) => updateLocation(i, updates)}
+                  onDelete={() => {
+                    Alert.alert('删除', `确定删除"${loc.name}"？`, [
+                      { text: '取消', style: 'cancel' },
+                      { text: '删除', style: 'destructive', onPress: () => deleteLocation(i) },
+                    ]);
+                  }} />
               ))}
+              <AddItemButton onPress={addLocation} label="添加地点" />
             </View>
           )}
 
           {/* Transport */}
-          {content.transport && (
-            <View style={styles.sectionBlock}>
-              <TouchableOpacity onPress={() => toggleSection('transport')} style={styles.collapsibleHeader}>
-                <View style={styles.sectionIconWrap}>
-                  <FontAwesome6 name="train-tram" size={14} color={COLORS.secondary} />
-                </View>
+          {transport && (
+            <View style={styles.section}>
+              <TouchableOpacity onPress={() => toggle('transport')} style={styles.sectionHeader}>
+                <View style={styles.iconWrap}><FontAwesome6 name="train" size={14} color={C.secondary} /></View>
                 <Text style={styles.sectionLabel}>交通</Text>
-                <FontAwesome6
-                  name={expandedSections['transport'] ? 'chevron-up' : 'chevron-down'}
-                  size={12} color={COLORS.muted}
-                />
+                <FontAwesome6 name={expanded['transport'] ? 'chevron-up' : 'chevron-down'} size={12} color={C.muted} />
               </TouchableOpacity>
-              {expandedSections['transport'] && (
-                <View style={styles.expandedContent}>
-                  {content.transport.intercity?.map((t, i) => (
-                    <View key={`ic-${i}`} style={styles.transportItem}>
-                      <View style={styles.transportBadge}>
-                        <Text style={styles.transportBadgeText}>城际</Text>
-                      </View>
-                      <Text style={styles.transportDesc}>{t.desc}</Text>
-                      {t.duration && <Text style={styles.transportDetail}>耗时：{t.duration}</Text>}
-                      {t.cost && <Text style={styles.transportDetail}>费用：{t.cost}</Text>}
-                      {t.tips && <Text style={styles.transportTip}>Tips: {t.tips}</Text>}
-                    </View>
+              {expanded['transport'] && (
+                <View style={styles.expanded}>
+                  {(transport.intercity || []).map((t, i) => (
+                    <TransportEditor key={`ic-${i}`} item={t} index={i} badge="城际" badgeColor={C.secondary}
+                      onSave={(u) => updateTransport('intercity', i, u)}
+                      onDelete={() => deleteTransport('intercity', i)} />
                   ))}
-                  {content.transport.intracity?.map((t, i) => (
-                    <View key={`ic2-${i}`} style={styles.transportItem}>
-                      <View style={[styles.transportBadge, { backgroundColor: '#E8F5E9' }]}>
-                        <Text style={[styles.transportBadgeText, { color: COLORS.success }]}>市内</Text>
-                      </View>
-                      <Text style={styles.transportMode}>{t.mode}</Text>
-                      <Text style={styles.transportDetail}>{t.details}</Text>
-                    </View>
+                  <AddItemButton onPress={() => addTransport('intercity')} label="添加城际交通" />
+                  {(transport.intracity || []).map((t, i) => (
+                    <TransportEditor key={`il-${i}`} item={t} index={i} badge="市内" badgeColor={C.success}
+                      onSave={(u) => updateTransport('intracity', i, u)}
+                      onDelete={() => deleteTransport('intracity', i)} />
                   ))}
+                  <AddItemButton onPress={() => addTransport('intracity')} label="添加市内交通" />
                 </View>
               )}
             </View>
           )}
 
           {/* Map */}
-          <View style={styles.mapSection}>
-            <View style={styles.collapsibleHeader}>
-              <View style={styles.sectionIconWrap}>
-                <FontAwesome6 name="globe" size={14} color={COLORS.secondary} />
-              </View>
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.iconWrap}><FontAwesome6 name="globe" size={14} color={C.secondary} /></View>
               <Text style={styles.sectionLabel}>地图</Text>
             </View>
-            <View style={styles.mapContainer}>
+            <View style={styles.mapWrap}>
               {Platform.OS === 'web' ? (
                 // @ts-ignore web only
-                <iframe
-                  srcDoc={buildMapHtml()}
-                  style={{ width: '100%', height: 300, border: 'none', borderRadius: 12 }}
-                  title="route-map"
-                />
+                <iframe srcDoc={buildMapHtml()} style={{ width: '100%', height: 300, border: 'none', borderRadius: 12 }} title="map" />
               ) : (
-                <WebView
-                  ref={webviewRef}
-                  source={{ html: buildMapHtml() }}
-                  style={{ height: 300, borderRadius: 12 }}
-                  onMessage={handleWebViewMessage}
-                  javaScriptEnabled
-                  originWhitelist={['*']}
-                />
+                <WebView ref={webviewRef} source={{ html: buildMapHtml() }} style={{ height: 300, borderRadius: 12 }}
+                  onMessage={handleWebViewMessage} javaScriptEnabled originWhitelist={['*']} />
               )}
             </View>
           </View>
@@ -371,64 +349,153 @@ export default function RouteBookScreen() {
   );
 }
 
-function LocationCard({ location, index, isHighlighted, onPress }: {
-  location: Location; index: number; isHighlighted: boolean; onPress: () => void;
+// Location Card with inline editing
+function LocationCard({ location, index, isHighlighted, onPress, onUpdate, onDelete }: {
+  location: Location; index: number; isHighlighted: boolean;
+  onPress: () => void; onUpdate: (u: Partial<Location>) => void; onDelete: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-
-  const handleNav = () => {
-    const query = location.lat && location.lng
-      ? `${location.lat},${location.lng}`
-      : `${location.name} ${location.nameIt || ''} Italy`;
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-    if (Platform.OS === 'web') {
-      // @ts-ignore web only
-      window.open(url, '_blank');
-    }
-  };
+  const [editModal, setEditModal] = useState(false);
 
   return (
-    <View style={[styles.locCard, isHighlighted && styles.locCardHighlighted]}>
+    <View style={[styles.locCard, isHighlighted && styles.locCardHl]}>
       <TouchableOpacity onPress={onPress} style={styles.locCardHeader}>
-        <View style={styles.locIndex}>
-          <Text style={styles.locIndexText}>{index + 1}</Text>
-        </View>
+        <View style={styles.locIdx}><Text style={styles.locIdxText}>{index + 1}</Text></View>
         <View style={styles.locInfo}>
           <Text style={styles.locName}>{location.name}</Text>
-          {location.nameIt && <Text style={styles.locNameIt}>{location.nameIt}</Text>}
+          {location.nameIt ? <Text style={styles.locNameIt}>{location.nameIt}</Text> : null}
           <View style={styles.locMeta}>
-            {location.hours && <Text style={styles.locMetaText}>{location.hours}</Text>}
-            {location.cost && <Text style={[styles.locMetaText, styles.locCost]}>{location.cost}</Text>}
-            {location.duration && <Text style={styles.locMetaText}>{location.duration}</Text>}
+            {location.hours ? <Text style={styles.locMetaText}>{location.hours}</Text> : null}
+            {location.cost ? <Text style={[styles.locMetaText, styles.locCost]}>{location.cost}</Text> : null}
+            {location.duration ? <Text style={styles.locMetaText}>{location.duration}</Text> : null}
           </View>
           <View style={styles.locTags}>
-            {location.tags?.map((tag, i) => (
+            {(location.tags || []).map((tag, i) => (
               <View key={i} style={[styles.tag, tag === '美食' && styles.tagFood, tag === '购物' && styles.tagShop]}>
-                <Text style={[styles.tagText, tag === '美食' && styles.tagTextFood, tag === '购物' && styles.tagTextShop]}>
-                  {tag}
-                </Text>
+                <Text style={[styles.tagText, tag === '美食' && styles.tagTextFood, tag === '购物' && styles.tagTextShop]}>{tag}</Text>
               </View>
             ))}
           </View>
         </View>
       </TouchableOpacity>
 
-      {location.tips && <View style={styles.locTipsRow}><FontAwesome6 name="lightbulb" size={12} color={COLORS.gold} /><Text style={styles.locTips}>{location.tips}</Text></View>}
+      {location.tips ? (
+        <View style={styles.locTipsRow}>
+          <FontAwesome6 name="lightbulb" size={11} color={C.gold} />
+          <EditableText value={location.tips} onSave={(v) => onUpdate({ tips: v })} style={{ flex: 1 }} />
+        </View>
+      ) : null}
 
       <View style={styles.locActions}>
-        <TouchableOpacity style={styles.locNavBtn} onPress={handleNav}>
-          <FontAwesome6 name="location-arrow" size={11} color={COLORS.secondary} />
+        <TouchableOpacity style={styles.locNavBtn} onPress={() => {
+          const q = location.lat && location.lng ? `${location.lat},${location.lng}` : `${location.name} Italy`;
+          const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+          if (Platform.OS === 'web') { /* @ts-ignore */ window.open(url, '_blank'); }
+        }}>
+          <FontAwesome6 name="location-arrow" size={11} color={C.secondary} />
           <Text style={styles.locNavText}>导航</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.locExpandBtn} onPress={() => setExpanded(!expanded)}>
-          <FontAwesome6 name={expanded ? 'chevron-up' : 'chevron-down'} size={11} color={COLORS.muted} />
-          <Text style={styles.locExpandText}>{expanded ? '收起' : '详情'}</Text>
+        <TouchableOpacity style={styles.locActionBtn} onPress={() => setEditModal(true)}>
+          <FontAwesome6 name="pen" size={11} color={C.muted} />
+          <Text style={styles.locActionText}>编辑</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.locActionBtn} onPress={() => setExpanded(!expanded)}>
+          <FontAwesome6 name={expanded ? 'chevron-up' : 'chevron-down'} size={11} color={C.muted} />
+          <Text style={styles.locActionText}>{expanded ? '收起' : '详情'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.locActionBtn} onPress={onDelete}>
+          <FontAwesome6 name="trash-can" size={11} color={C.danger} />
         </TouchableOpacity>
       </View>
 
       {expanded && location.intro && (
-        <View style={styles.locIntro}>
-          <Text style={styles.locIntroText}>{location.intro}</Text>
+        <View style={styles.locIntro}><Text style={styles.locIntroText}>{location.intro}</Text></View>
+      )}
+
+      {/* Edit Modal */}
+      <Modal visible={editModal} transparent animationType="slide">
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>编辑地点</Text>
+                <TouchableOpacity onPress={() => setEditModal(false)}>
+                  <FontAwesome6 name="xmark" size={18} color={C.muted} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView style={styles.modalBody}>
+                <Text style={styles.fieldLabel}>中文名称</Text>
+                <TextInput style={styles.fieldInput} defaultValue={location.name}
+                  onChangeText={(v) => onUpdate({ name: v })} />
+                <Text style={styles.fieldLabel}>意大利文名称</Text>
+                <TextInput style={styles.fieldInput} defaultValue={location.nameIt || ''}
+                  onChangeText={(v) => onUpdate({ nameIt: v })} />
+                <Text style={styles.fieldLabel}>营业时间</Text>
+                <TextInput style={styles.fieldInput} defaultValue={location.hours || ''}
+                  onChangeText={(v) => onUpdate({ hours: v })} placeholder="如 9:00-18:00" placeholderTextColor={C.muted} />
+                <Text style={styles.fieldLabel}>人均消费</Text>
+                <TextInput style={styles.fieldInput} defaultValue={location.cost || ''}
+                  onChangeText={(v) => onUpdate({ cost: v })} placeholder="如 50EUR / 免费" placeholderTextColor={C.muted} />
+                <Text style={styles.fieldLabel}>预计游玩时间</Text>
+                <TextInput style={styles.fieldInput} defaultValue={location.duration || ''}
+                  onChangeText={(v) => onUpdate({ duration: v })} placeholder="如 2h" placeholderTextColor={C.muted} />
+                <Text style={styles.fieldLabel}>Tips</Text>
+                <TextInput style={[styles.fieldInput, { minHeight: 60 }]} defaultValue={location.tips || ''}
+                  onChangeText={(v) => onUpdate({ tips: v })} multiline placeholder="注意事项" placeholderTextColor={C.muted} />
+                <Text style={styles.fieldLabel}>景点介绍</Text>
+                <TextInput style={[styles.fieldInput, { minHeight: 80 }]} defaultValue={location.intro || ''}
+                  onChangeText={(v) => onUpdate({ intro: v })} multiline placeholder="景点介绍" placeholderTextColor={C.muted} />
+              </ScrollView>
+              <View style={styles.modalFooter}>
+                <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={() => setEditModal(false)}>
+                  <Text style={styles.saveBtnText}>完成</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+    </View>
+  );
+}
+
+// Transport inline editor
+function TransportEditor({ item, index, badge, badgeColor, onSave, onDelete }: {
+  item: TransportItem; index: number; badge: string; badgeColor: string;
+  onSave: (u: Partial<TransportItem>) => void; onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  return (
+    <View style={styles.transportItem}>
+      <View style={styles.transportHeader}>
+        <View style={[styles.transportBadge, { backgroundColor: `${badgeColor}15` }]}>
+          <Text style={[styles.transportBadgeText, { color: badgeColor }]}>{badge}</Text>
+        </View>
+        <TouchableOpacity onPress={() => setEditing(!editing)}>
+          <FontAwesome6 name={editing ? 'check' : 'pen'} size={12} color={editing ? C.success : C.muted} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onDelete}>
+          <FontAwesome6 name="trash-can" size={12} color={C.danger} />
+        </TouchableOpacity>
+      </View>
+      {editing ? (
+        <View style={{ gap: 6 }}>
+          <TextInput style={styles.fieldInput} defaultValue={item.desc || item.mode || ''}
+            onChangeText={(v) => item.desc !== undefined ? onSave({ desc: v }) : onSave({ mode: v })} placeholder="描述" placeholderTextColor={C.muted} />
+          {item.duration !== undefined && <TextInput style={styles.fieldInput} defaultValue={item.duration || ''}
+            onChangeText={(v) => onSave({ duration: v })} placeholder="耗时" placeholderTextColor={C.muted} />}
+          {item.cost !== undefined && <TextInput style={styles.fieldInput} defaultValue={item.cost || ''}
+            onChangeText={(v) => onSave({ cost: v })} placeholder="费用" placeholderTextColor={C.muted} />}
+          <TextInput style={[styles.fieldInput, { minHeight: 50 }]} defaultValue={item.details || item.tips || ''}
+            onChangeText={(v) => item.details !== undefined ? onSave({ details: v }) : onSave({ tips: v })} multiline placeholder="详情/Tips" placeholderTextColor={C.muted} />
+        </View>
+      ) : (
+        <View>
+          <Text style={styles.transportDesc}>{item.desc || item.mode}</Text>
+          {item.duration ? <Text style={styles.transportDetail}>耗时：{item.duration}</Text> : null}
+          {item.cost ? <Text style={styles.transportDetail}>费用：{item.cost}</Text> : null}
+          {item.details ? <Text style={styles.transportDetail}>{item.details}</Text> : null}
+          {item.tips ? <Text style={styles.transportTip}>Tips: {item.tips}</Text> : null}
         </View>
       )}
     </View>
@@ -436,133 +503,102 @@ function LocationCard({ location, index, isHighlighted, onPress }: {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+  container: { flex: 1, backgroundColor: C.bg },
   loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { fontSize: 16, color: COLORS.muted },
+  loadingText: { fontSize: 16, color: C.muted },
 
-  // Day Tabs
-  dayTabsContainer: { backgroundColor: COLORS.surface, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  dayTabsWrap: { backgroundColor: C.surface, borderBottomWidth: 1, borderBottomColor: C.border },
   dayTabsContent: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
-  dayTab: {
-    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12,
-    backgroundColor: COLORS.bg, alignItems: 'center', minWidth: 64,
-  },
-  dayTabActive: { backgroundColor: COLORS.primary },
-  dayTabText: { fontSize: 13, fontWeight: '700', color: COLORS.text },
-  dayTabTextActive: { color: '#FFFFFF' },
-  dayTabSub: { fontSize: 10, color: COLORS.muted, marginTop: 2 },
+  dayTab: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: C.bg, alignItems: 'center', minWidth: 64 },
+  dayTabActive: { backgroundColor: C.primary },
+  dayTabText: { fontSize: 13, fontWeight: '700', color: C.text },
+  dayTabTextActive: { color: '#FFF' },
+  dayTabSub: { fontSize: 10, color: C.muted, marginTop: 2 },
   dayTabSubActive: { color: 'rgba(255,255,255,0.8)' },
 
-  // Day Header
   dayHeader: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  dayHeaderCity: { fontSize: 22, fontWeight: '800', color: COLORS.text },
-  dayHeaderCityEn: { fontSize: 14, fontWeight: '400', color: COLORS.muted },
-  dayHeaderDate: { fontSize: 13, color: COLORS.muted, marginTop: 4 },
+  dayHeaderCity: { fontSize: 22, fontWeight: '800', color: C.text },
+  dayHeaderCityEn: { fontSize: 14, fontWeight: '400', color: C.muted },
+  dayHeaderDate: { fontSize: 13, color: C.muted, marginTop: 4 },
 
   content: { flex: 1 },
   contentInner: { paddingHorizontal: 16, paddingBottom: 100 },
 
-  // Overview
   overviewBlock: { marginBottom: 16 },
-  overviewHighlight: {
-    backgroundColor: '#FFF3E0', borderRadius: 14, padding: 16,
-    borderLeftWidth: 4, borderLeftColor: COLORS.gold,
-  },
-  overviewText: { fontSize: 14, color: COLORS.text, lineHeight: 22 },
-  collapsibleHeader: {
-    flexDirection: 'row', alignItems: 'center', marginTop: 12,
-    paddingVertical: 8,
-  },
-  collapsibleTitle: { fontSize: 14, fontWeight: '600', color: COLORS.text, flex: 1 },
-  cityIntroText: { fontSize: 13, color: COLORS.muted, lineHeight: 20, marginTop: 4 },
+  overviewHighlight: { backgroundColor: '#FFF3E0', borderRadius: 14, padding: 16, borderLeftWidth: 4, borderLeftColor: C.gold },
+  sectionToggle: { flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingVertical: 8 },
+  sectionToggleTitle: { fontSize: 14, fontWeight: '600', color: C.text, flex: 1 },
 
-  // Sections
-  sectionBlock: {
-    backgroundColor: COLORS.surface, borderRadius: 16, marginBottom: 12, padding: 16,
-    shadowColor: COLORS.primary, shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  sectionIconWrap: {
-    width: 28, height: 28, borderRadius: 8, backgroundColor: '#FFF3E0',
-    justifyContent: 'center', alignItems: 'center', marginRight: 10,
-  },
-  sectionHeaderContent: { flex: 1 },
-  sectionLabel: { fontSize: 15, fontWeight: '700', color: COLORS.text, flex: 1 },
-  sectionHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  section: { backgroundColor: C.surface, borderRadius: 16, marginBottom: 12, padding: 16, shadowColor: C.primary, shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center' },
+  iconWrap: { width: 28, height: 28, borderRadius: 8, backgroundColor: '#FFF3E0', justifyContent: 'center', alignItems: 'center', marginRight: 10 },
+  sectionLabel: { fontSize: 15, fontWeight: '700', color: C.text, flex: 1 },
+  sectionRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  expanded: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: C.border },
 
-  // Accommodation
-  accCity: { fontSize: 12, color: COLORS.muted, marginTop: 2 },
-  navButton: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: '#EBF5FB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8,
-  },
-  navButtonText: { fontSize: 11, color: COLORS.secondary, fontWeight: '600' },
-  expandedContent: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
-  detailText: { fontSize: 13, color: COLORS.text, lineHeight: 20, marginBottom: 6 },
-  detailTextWarn: { fontSize: 13, color: COLORS.primary, lineHeight: 20, marginTop: 4 },
+  fieldRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10, gap: 8 },
+  fieldLabel: { fontSize: 12, color: C.muted, width: 60, paddingTop: 6 },
+  fieldInput: { backgroundColor: C.bg, borderRadius: 10, padding: 10, fontSize: 13, color: C.text, borderWidth: 1, borderColor: C.border },
 
-  sameAccBlock: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface,
-    borderRadius: 12, padding: 12, marginBottom: 12, gap: 8,
-  },
-  sameAccText: { fontSize: 13, color: COLORS.muted, flex: 1 },
+  navBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#EBF5FB', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  navBtnText: { fontSize: 11, color: C.secondary, fontWeight: '600' },
 
-  // Tips
-  tipText: { fontSize: 13, color: COLORS.text, lineHeight: 20, marginBottom: 6 },
-  packingList: { marginTop: 12 },
-  packingTitle: { fontSize: 13, fontWeight: '700', color: COLORS.text, marginBottom: 8 },
-  packingItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  checkbox: { width: 16, height: 16, borderRadius: 4, borderWidth: 1.5, borderColor: COLORS.border, marginRight: 8 },
-  packingItemText: { fontSize: 13, color: COLORS.text },
+  sameAcc: { flexDirection: 'row', alignItems: 'center', backgroundColor: C.surface, borderRadius: 12, padding: 12, marginBottom: 12, gap: 8 },
+  sameAccText: { fontSize: 13, color: C.muted, flex: 1 },
 
-  // Locations
-  locCard: {
-    backgroundColor: COLORS.bg, borderRadius: 14, padding: 14, marginTop: 10,
-    borderWidth: 1, borderColor: 'transparent',
-  },
-  locCardHighlighted: { borderColor: COLORS.primary, backgroundColor: '#FFF3E0' },
+  packingSection: { marginTop: 12 },
+  packingTitle: { fontSize: 13, fontWeight: '700', color: C.text, marginBottom: 8 },
+  packingItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 6, gap: 8 },
+  checkbox: { width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: C.border, justifyContent: 'center', alignItems: 'center' },
+  checkboxChecked: { backgroundColor: C.success, borderColor: C.success },
+  packingText: { fontSize: 13, color: C.text },
+  packingTextChecked: { textDecorationLine: 'line-through', color: C.muted },
+
+  locCard: { backgroundColor: C.bg, borderRadius: 14, padding: 14, marginTop: 10, borderWidth: 1, borderColor: 'transparent' },
+  locCardHl: { borderColor: C.primary, backgroundColor: '#FFF3E0' },
   locCardHeader: { flexDirection: 'row' },
-  locIndex: {
-    width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.primary,
-    justifyContent: 'center', alignItems: 'center', marginRight: 10, marginTop: 2,
-  },
-  locIndexText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
+  locIdx: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, justifyContent: 'center', alignItems: 'center', marginRight: 10, marginTop: 2 },
+  locIdxText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
   locInfo: { flex: 1 },
-  locName: { fontSize: 15, fontWeight: '700', color: COLORS.text },
-  locNameIt: { fontSize: 12, color: COLORS.muted, marginTop: 1, fontStyle: 'italic' },
+  locName: { fontSize: 15, fontWeight: '700', color: C.text },
+  locNameIt: { fontSize: 12, color: C.muted, marginTop: 1, fontStyle: 'italic' },
   locMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
-  locMetaText: { fontSize: 12, color: COLORS.muted },
-  locCost: { color: COLORS.primary, fontWeight: '600' },
+  locMetaText: { fontSize: 12, color: C.muted },
+  locCost: { color: C.primary, fontWeight: '600' },
   locTags: { flexDirection: 'row', gap: 6, marginTop: 6 },
   tag: { backgroundColor: '#EBF5FB', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   tagFood: { backgroundColor: '#FFF3E0' },
   tagShop: { backgroundColor: '#F3E5F5' },
-  tagText: { fontSize: 11, color: COLORS.secondary, fontWeight: '500' },
+  tagText: { fontSize: 11, color: C.secondary, fontWeight: '500' },
   tagTextFood: { color: '#E65100' },
   tagTextShop: { color: '#7B1FA2' },
-  locTips: { fontSize: 12, color: COLORS.gold, lineHeight: 18, flex: 1 },
   locTipsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 8 },
-  locActions: { flexDirection: 'row', gap: 16, marginTop: 10 },
+  locActions: { flexDirection: 'row', gap: 14, marginTop: 10, alignItems: 'center' },
   locNavBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  locNavText: { fontSize: 11, color: COLORS.secondary, fontWeight: '500' },
-  locExpandBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  locExpandText: { fontSize: 11, color: COLORS.muted },
-  locIntro: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: COLORS.border },
-  locIntroText: { fontSize: 13, color: COLORS.muted, lineHeight: 20 },
+  locNavText: { fontSize: 11, color: C.secondary, fontWeight: '500' },
+  locActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  locActionText: { fontSize: 11, color: C.muted },
+  locIntro: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: C.border },
+  locIntroText: { fontSize: 13, color: C.muted, lineHeight: 20 },
 
-  // Transport
-  transportItem: { marginBottom: 12 },
-  transportBadge: {
-    backgroundColor: '#EBF5FB', paddingHorizontal: 8, paddingVertical: 3,
-    borderRadius: 6, alignSelf: 'flex-start', marginBottom: 6,
-  },
-  transportBadgeText: { fontSize: 11, color: COLORS.secondary, fontWeight: '600' },
-  transportDesc: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
-  transportMode: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 4 },
-  transportDetail: { fontSize: 13, color: COLORS.muted, lineHeight: 19 },
-  transportTip: { fontSize: 12, color: COLORS.primary, marginTop: 4, lineHeight: 18 },
+  transportItem: { marginBottom: 12, backgroundColor: C.bg, borderRadius: 12, padding: 12 },
+  transportHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
+  transportBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  transportBadgeText: { fontSize: 11, fontWeight: '600' },
+  transportDesc: { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 4 },
+  transportDetail: { fontSize: 13, color: C.muted, lineHeight: 19 },
+  transportTip: { fontSize: 12, color: C.primary, marginTop: 4, lineHeight: 18 },
 
-  // Map
-  mapSection: { marginTop: 4, marginBottom: 16 },
-  mapContainer: { borderRadius: 12, overflow: 'hidden', marginTop: 8, height: 300, backgroundColor: '#E8DDD0' },
+  mapWrap: { borderRadius: 12, overflow: 'hidden', marginTop: 8, height: 300, backgroundColor: '#E8DDD0' },
+
+  // Modal
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalContent: { backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '85%' },
+  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: C.border },
+  modalTitle: { fontSize: 17, fontWeight: '700', color: C.text },
+  modalBody: { padding: 20, gap: 4 },
+  modalFooter: { flexDirection: 'row', padding: 20, borderTopWidth: 1, borderTopColor: C.border },
+  modalBtn: { flex: 1, paddingVertical: 14, borderRadius: 14, alignItems: 'center' },
+  saveBtn: { backgroundColor: C.primary },
+  saveBtnText: { fontSize: 15, fontWeight: '600', color: '#FFF' },
 });

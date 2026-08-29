@@ -25,6 +25,11 @@ app.get('/api/v1/trip-info', (_req, res) => {
   res.json(data);
 });
 
+app.put('/api/v1/trip-info', (req, res) => {
+  writeStore('trip_info', req.body);
+  res.json({ success: true });
+});
+
 // ===== Days =====
 interface DayRecord { id: number; day_number: number; date: string; weekday: string; city: string; city_en: string; content_json: string; sort_order: number; }
 
@@ -128,6 +133,33 @@ app.get('/api/v1/bookings', (_req, res) => {
   const items = readStore<BookingRecord[]>('bookings', []);
   items.sort((a, b) => a.sort_order - b.sort_order);
   res.json(items);
+});
+
+app.post('/api/v1/bookings', (req, res) => {
+  const items = readStore<BookingRecord[]>('bookings', []);
+  const { city, date, attraction, price, need_reservation, booking_link, note } = req.body;
+  const maxOrder = items.reduce((max, i) => Math.max(max, i.sort_order), 0);
+  const newItem: BookingRecord = { id: nextId(), city, date, attraction, price: price || '', need_reservation: need_reservation ? 1 : 0, booking_link: booking_link || '', note: note || '', sort_order: maxOrder + 1 };
+  items.push(newItem);
+  writeStore('bookings', items);
+  res.json({ id: newItem.id });
+});
+
+app.put('/api/v1/bookings/:id', (req, res) => {
+  const items = readStore<BookingRecord[]>('bookings', []);
+  const idx = items.findIndex(i => i.id === Number(req.params.id));
+  if (idx === -1) return res.status(404).json({ error: 'Not found' });
+  const { city, date, attraction, price, need_reservation, booking_link, note } = req.body;
+  items[idx] = { ...items[idx], city, date, attraction, price, need_reservation: need_reservation ? 1 : 0, booking_link: booking_link || '', note: note || '' };
+  writeStore('bookings', items);
+  res.json({ success: true });
+});
+
+app.delete('/api/v1/bookings/:id', (req, res) => {
+  let items = readStore<BookingRecord[]>('bookings', []);
+  items = items.filter(i => i.id !== Number(req.params.id));
+  writeStore('bookings', items);
+  res.json({ success: true });
 });
 
 app.listen(port, () => {

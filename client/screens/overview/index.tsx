@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ScrollView, Image, StyleSheet, Platform } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { getTripInfo, type TripInfo, type FlightSegment } from '@/services/api';
 import { FontAwesome6 } from '@expo/vector-icons';
+import { useDataPolling } from '@/hooks/useDataPolling';
 
 // Hand-drawn map image
 const mapImage = require('@/assets/italy-map.jpeg');
@@ -10,9 +11,12 @@ const mapImage = require('@/assets/italy-map.jpeg');
 export default function OverviewScreen() {
   const [trip, setTrip] = useState<TripInfo | null>(null);
 
-  useEffect(() => {
+  const loadData = useCallback(() => {
     getTripInfo().then(setTrip).catch(console.error);
   }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+  useDataPolling(loadData, 5000);
 
   if (!trip) {
     return (

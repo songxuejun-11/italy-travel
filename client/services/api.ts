@@ -11,11 +11,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 // Trip Info
 export const getTripInfo = () => request<TripInfo>('/trip-info');
+export const updateTripInfo = (data: Partial<TripInfo>) =>
+  request<{ success: boolean }>('/trip-info', { method: 'PUT', body: JSON.stringify(data) });
 
 // Days
 export const getDays = () => request<Day[]>('/days');
 export const getDay = (id: number) => request<Day>(`/days/${id}`);
-export const updateDayContent = (id: number, content: Record<string, unknown>) =>
+export const updateDayContent = (id: number, content: DayContent) =>
   request<{ success: boolean }>(`/days/${id}/content`, {
     method: 'PUT',
     body: JSON.stringify({ content_json: content }),
@@ -41,6 +43,12 @@ export const deleteChecklistItem = (id: number) =>
 
 // Bookings
 export const getBookings = () => request<Booking[]>('/bookings');
+export const createBooking = (data: CreateBooking) =>
+  request<{ id: number }>('/bookings', { method: 'POST', body: JSON.stringify(data) });
+export const updateBooking = (id: number, data: CreateBooking) =>
+  request<{ success: boolean }>(`/bookings/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const deleteBooking = (id: number) =>
+  request<{ success: boolean }>(`/bookings/${id}`, { method: 'DELETE' });
 
 // Types
 export interface TripInfo {
@@ -51,10 +59,7 @@ export interface TripInfo {
   destination: string;
   cities: string[];
   notices: { transport: string[]; travel: string[]; daily: string };
-  flights: {
-    outbound: FlightInfo;
-    inbound: FlightInfo;
-  };
+  flights: { outbound: FlightInfo; inbound: FlightInfo };
 }
 
 export interface FlightInfo {
@@ -171,4 +176,14 @@ export interface Booking {
   booking_link: string;
   note: string;
   sort_order: number;
+}
+
+export interface CreateBooking {
+  city: string;
+  date: string;
+  attraction: string;
+  price: string;
+  need_reservation: number;
+  booking_link: string;
+  note: string;
 }
