@@ -116,7 +116,7 @@ export function seedIfNeeded() {
         { name: '普雷托利亚喷泉', nameIt: 'Fontana Pretoria', hours: '维修中', cost: '免费', tags: ['景点'], duration: '10min', tips: '在外面路过一下就可以了', intro: '以裸体雕塑闻名，原本建于1554年，为佛罗伦萨一位贵族设计的私人花园喷泉。1574年巴勒莫市政府将其买下并拆解运回西西里，重新组装于此。雕塑精美绝伦，是文艺复兴时期的杰作。', lat: 38.1148, lng: 13.3605, order: 8 },
         { name: 'Ganci面包店', nameIt: 'Rosticceria da Ganci', hours: '24h', cost: '2€', tags: ['美食'], duration: '', tips: '面包只要1€，还是24小时营业，多买多吃，强推肉酱炸饭团；靠近巴勒莫车站，建议9/25早上去买', intro: '', lat: 38.1165, lng: 13.3640, order: 9 },
       ],
-      transport: { intercity: [{ desc: '巴勒莫机场 → 巴勒莫市区', duration: '1h', cost: '6.8€', departure: '', time: '', tips: '现场购票；跟随橙色指示牌"TRENI train station"到售票地点' }], intracity: [{ mode: '公交车', details: '车票不分车次，为通用票；上车需在打票机上打票，磁条面朝下放入打票机；打票后车票90min内有效，可以转车，超过90min仍在车上有被查票罚款风险' }] }
+      transport: { intercity: [{ desc: '巴勒莫机场 → 巴勒莫市区', duration: '1h', cost: '6.8€', departure: 'Palermo Aeroporto', departureLat: 38.1790, departureLng: 13.2450, time: '', tips: '现场购票；跟随橙色指示牌"TRENI train station"到售票地点' }], intracity: [{ mode: '公交车', details: '车票不分车次，为通用票；上车需在打票机上打票，磁条面朝下放入打票机；打票后车票90min内有效，可以转车，超过90min仍在车上有被查票罚款风险' }] }
     })
   };
 
@@ -130,7 +130,7 @@ export function seedIfNeeded() {
       locations: [
         { name: 'Parco Trevelyan', nameIt: 'Parco Trevelyan', hours: '8:00-20:00', cost: '免费', tags: ['景点'], duration: '30min', tips: '', intro: '可以俯瞰西西里，欣赏到埃特纳火山和纳克索斯湾的壮丽景色。园内有特列威廉夫人设计的奇特塔楼建筑', lat: 37.8530, lng: 15.2840, order: 1 },
       ],
-      transport: { intercity: [{ desc: '巴勒莫 → 陶尔米纳', duration: '5h', cost: '20€', departure: 'Palermo Via Tommaso Fazello', time: '', tips: '第一程：巴勒莫 → 卡塔尼亚（SAIS/Interbus/Flixbus，现场买票，9:00-12:00半小时一班车）；第二程：卡塔尼亚 → 陶尔米纳（Interbus，现场买票或APP买票，6:00-20:00半小时一班车）；坐第二层第一排左侧可以看到海景' }], intracity: [] }
+      transport: { intercity: [{ desc: '巴勒莫 → 陶尔米纳', duration: '5h', cost: '20€', departure: 'Palermo Via Tommaso Fazello', departureLat: 38.1165, departureLng: 13.3640, time: '9:00-12:00半小时一班', tips: '第一程：巴勒莫 → 卡塔尼亚（SAIS/Interbus/Flixbus，现场买票）；第二程：卡塔尼亚 → 陶尔米纳（Interbus，现场买票或APP买票，6:00-20:00半小时一班）；坐第二层第一排左侧可以看到海景' }], intracity: [] }
     })
   };
 
@@ -145,7 +145,7 @@ export function seedIfNeeded() {
         { name: '贝拉岛观景平台', nameIt: 'Belvedere di Via Pirandello', hours: '24h', cost: '免费', tags: ['景点'], duration: '1h', tips: '', intro: '俯瞰Isola Bella爱心小岛的最佳机位，路上还会经过Villa Comunale di Taormina皇家花园', lat: 37.8495, lng: 15.2855, order: 1 },
         { name: '贝拉岛', nameIt: 'Isola Bella', hours: '24h', cost: '免费', tags: ['景点'], duration: '2h', tips: '推荐退潮时去，备好溯溪鞋或者洞洞鞋；可参考小红书攻略坐船上岛，或退潮时走到岛上，或躺在沙滩上', intro: '', lat: 37.8485, lng: 15.2870, order: 2 },
       ],
-      transport: { intercity: [], intracity: [{ mode: '公交车/缆车', details: '缆车单程6€，往返10€，可抵达Isola Bella/海滩。上车站：Via Pirandello 22, Taormina' }] }
+      transport: { intercity: [], intracity: [{ mode: '缆车', details: '缆车单程6€，往返10€，可抵达Isola Bella/海滩。上车站：Via Pirandello 22, Taormina', stationLat: 37.8495, stationLng: 15.2855 }] }
     })
   };
 
@@ -161,7 +161,7 @@ export function seedIfNeeded() {
         { name: '锡拉库萨教堂广场', nameIt: 'Piazza del Duomo', hours: '', cost: '2€（门票）', tags: ['景点'], duration: '1h', tips: '', intro: '', lat: 37.0620, lng: 15.2925, order: 2 },
         { name: '马尼亚切城堡', nameIt: 'Maniace Castle', hours: '', cost: '5€（门票）', tags: ['景点'], duration: '1h', tips: '', intro: '马尼亚切城堡是座独一无二的中世纪海防建筑：腓特烈二世留存极少的海边皇家堡垒', lat: 37.0585, lng: 15.2965, order: 3 },
       ],
-      transport: { intercity: [{ desc: '陶尔米纳 → 锡拉库萨', duration: '2h', cost: '80 RMB', departure: 'Taormina-Giardini', time: '10:00-11:57', tips: '现场购票/提前网上购票；坐在左侧可看到海景' }], intracity: [{ mode: '公交车', details: '公共交通为红色面包车，需招手停车；巴士票提前官网买（1.2€/次或1.5€/90min），目的地为奥提伽岛Ortigia' }] }
+      transport: { intercity: [{ desc: '陶尔米纳 → 锡拉库萨', duration: '2h', cost: '80 RMB', departure: 'Taormina-Giardini火车站', departureLat: 37.8480, departureLng: 15.2810, time: '10:00-11:57', tips: '现场购票/提前网上购票；坐在左侧可看到海景' }], intracity: [{ mode: '公交车', details: '公共交通为红色面包车，需招手停车；巴士票提前官网买（1.2€/次或1.5€/90min），目的地为奥提伽岛Ortigia' }] }
     })
   };
 
@@ -177,7 +177,7 @@ export function seedIfNeeded() {
         { name: '翁贝托一世街', nameIt: 'Corso Umberto', hours: '10:00-21:00', cost: '不定', tags: ['购物'], duration: '2h', tips: '', intro: '奢侈品、手信、咖啡馆应有尽有。尽头的Dior店非常漂亮。人头陶瓷花盆：很久以前，巴勒莫一个女孩爱上了一个阿拉伯男子，但他已有了妻儿并准备离开西西里，疯狂的女孩砍下了他的头做成花盆，从此这个图案成为西西里的象征', lat: 37.8528, lng: 15.2838, order: 2 },
         { name: '四月九日广场', nameIt: 'Piazza IX Aprile', hours: '24h', cost: '不定', tags: ['购物'], duration: '1h', tips: '', intro: '陶尔米纳的市中心，有着漂亮的街景和历史悠久的教堂', lat: 37.8532, lng: 15.2842, order: 3 },
       ],
-      transport: { intercity: [{ desc: '陶尔米纳 → 那不勒斯（过夜火车）', duration: '约10h', cost: '50€+', departure: 'Taormina-Giardini', time: '23:35 - 07:42(+1)', tips: '①提前邮箱核实出发时间；②分为四人间和双人间，均为公共卫生间；③下车前收拾出带去索伦托的背包' }], intracity: [] }
+      transport: { intercity: [{ desc: '陶尔米纳 → 那不勒斯（过夜火车）', duration: '约10h', cost: '50€+', departure: 'Taormina-Giardini火车站', departureLat: 37.8480, departureLng: 15.2810, time: '23:35 - 07:42(+1)', tips: '①提前邮箱核实出发时间；②分为四人间和双人间，均为公共卫生间；③下车前收拾出带去索伦托的背包' }], intracity: [] }
     })
   };
 
@@ -191,7 +191,7 @@ export function seedIfNeeded() {
       locations: [
         { name: '乔瓦娜秘境', nameIt: 'Capo di Sorrento', hours: '24h', cost: '免费', tags: ['景点'], duration: '3h', tips: '中午去天然果冻海泳池游泳，带泳衣浴巾和一些食物和水；那不勒斯抵达秘境只需换乘2次，约2h', intro: '', lat: 40.6260, lng: 14.3760, order: 1 },
       ],
-      transport: { intercity: [{ desc: '那不勒斯 → 索伦托', duration: '1h', cost: '4.6€', departure: 'Napoli Porta Nolana', time: '', tips: '现场购票；乘坐近郊火车Circumvesuviana，沿路找该标识。此站为始发站，人少有座；一般去索伦托方向为站台1，站台屏幕方向为车头，在车头处登车是座椅车厢' }], intracity: [{ mode: '公交车', details: 'App购票（UnicoCampania）/ 车站售票点买票 / 上车买票（部分公交EAV）' }] }
+      transport: { intercity: [{ desc: '那不勒斯 → 索伦托', duration: '1h', cost: '4.6€', departure: 'Napoli Porta Nolana火车站', departureLat: 40.8525, departureLng: 14.2730, time: '', tips: '现场购票；乘坐近郊火车Circumvesuviana，沿路找该标识。此站为始发站，人少有座；一般去索伦托方向为站台1，站台屏幕方向为车头，在车头处登车是座椅车厢' }], intracity: [{ mode: '公交车', details: 'App购票（UnicoCampania）/ 车站售票点买票 / 上车买票（部分公交EAV）' }] }
     })
   };
 
@@ -222,7 +222,7 @@ export function seedIfNeeded() {
       locations: [
         { name: '庞贝古城', nameIt: 'Pompeii', hours: '预约10:00', cost: '500 RMB', tags: ['景点'], duration: '4h', tips: '', intro: '公元79年因维苏威火山爆发被瞬间掩埋，也因此完整保存了古罗马城市的街道、建筑和生活场景。可以看到著名的市政广场、大剧院、角斗场以及令人震撼的"石膏铸像"。庞贝 not just a ruin, but a time capsule.', lat: 40.7505, lng: 14.4865, order: 1 },
       ],
-      transport: { intercity: [{ desc: '那不勒斯 → 庞贝', duration: '30min', cost: '3.3€', departure: 'Napoli Porta Nolana', time: '', tips: '现场购票；目的地买票到Pompei Scavi – Villa dei Misteri站' }], intracity: [] }
+      transport: { intercity: [{ desc: '那不勒斯 → 庞贝', duration: '30min', cost: '3.3€', departure: 'Napoli Porta Nolana火车站', departureLat: 40.8525, departureLng: 14.2730, time: '', tips: '现场购票；目的地买票到Pompei Scavi – Villa dei Misteri站' }], intracity: [] }
     })
   };
 
@@ -237,7 +237,7 @@ export function seedIfNeeded() {
         { name: '那不勒斯主教堂', nameIt: 'Duomo di Napoli', hours: '10:00-17:00，周三闭馆', cost: '免费，博物馆13€', tags: ['景点'], duration: '1h', tips: '', intro: '教堂原名圣母升天大主教座堂，是城市守护神圣雅纳略的圣地。意大利每座城市都有自己的守护神，罗马有圣彼得，那不勒斯有圣雅纳略。公元305年圣雅纳略被斩首殉道，他的血液被保存在教堂中', lat: 40.8540, lng: 14.2630, order: 1 },
         { name: '圣依纳爵堂', nameIt: 'Piazza S. Ignazio', hours: '9:00-23:30', cost: '免费', tags: ['景点'], duration: '1h', tips: '晚上去人少，看假穹顶天顶画', intro: '教堂始建于17世纪，为纪念耶稣会创始人圣伊纳爵而建。最震撼的是其天顶画，描绘《圣伊纳爵在天国受到基督和圣母的欢迎》。当时由于资金不足以建造穹顶，艺术家使用透视法绘制出逼真的穹顶效果', lat: 41.8995, lng: 12.4780, order: 2 },
       ],
-      transport: { intercity: [{ desc: '那不勒斯 → 罗马', duration: '1h', cost: '', departure: 'Napoli Central', time: '', tips: '' }], intracity: [{ mode: '同Day 7那不勒斯交通', details: '地铁Metro/缆车Funicolare' }] }
+      transport: { intercity: [{ desc: '那不勒斯 → 罗马', duration: '1h', cost: '30€+', departure: 'Napoli Centrale火车站', departureLat: 40.8535, departureLng: 14.2735, time: '', tips: 'Trenitalia/Italo高铁，建议提前网上购票' }], intracity: [{ mode: '同Day 7那不勒斯交通', details: '地铁Metro/缆车Funicolare' }] }
     })
   };
 

@@ -133,6 +133,8 @@ export interface TransportItem {
   duration?: string;
   cost?: string;
   departure?: string;
+  departureLat?: number;
+  departureLng?: number;
   time?: string;
   tips?: string;
 }

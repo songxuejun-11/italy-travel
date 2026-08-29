@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
   Platform, LayoutAnimation, TextInput, Alert, Modal,
-  KeyboardAvoidingView,
+  KeyboardAvoidingView, Linking,
 } from 'react-native';
 import { Screen } from '@/components/Screen';
 import { getDays, updateDayContent, type Day, type DayContent, type Location, type TransportItem } from '@/services/api';
@@ -500,8 +500,23 @@ function TransportEditor({ item, index, badge, badgeColor, onSave, onDelete }: {
           <Text style={styles.transportDesc}>{item.desc || item.mode}</Text>
           {item.duration ? <Text style={styles.transportDetail}>耗时：{item.duration}</Text> : null}
           {item.cost ? <Text style={styles.transportDetail}>费用：{item.cost}</Text> : null}
+          {item.departure ? <Text style={styles.transportDetail}>出发站：{item.departure}</Text> : null}
+          {item.time ? <Text style={styles.transportDetail}>时间：{item.time}</Text> : null}
           {item.details ? <Text style={styles.transportDetail}>{item.details}</Text> : null}
           {item.tips ? <Text style={styles.transportTip}>Tips: {item.tips}</Text> : null}
+          {/* Station navigation button */}
+          {item.departureLat && item.departureLng ? (
+            <TouchableOpacity
+              style={styles.stationNavBtn}
+              onPress={() => {
+                const url = `https://www.google.com/maps/dir/?api=1&destination=${item.departureLat},${item.departureLng}&travelmode=walking`;
+                Linking.openURL(url);
+              }}
+            >
+              <FontAwesome6 name="location-dot" size={12} color={C.primary} />
+              <Text style={styles.stationNavText}>导航至{item.departure}</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       )}
     </View>
@@ -596,6 +611,9 @@ const styles = StyleSheet.create({
   transportDesc: { fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 4 },
   transportDetail: { fontSize: 13, color: C.muted, lineHeight: 19 },
   transportTip: { fontSize: 12, color: C.primary, marginTop: 4, lineHeight: 18 },
+
+  stationNavBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, paddingVertical: 8, paddingHorizontal: 12, backgroundColor: `${C.primary}10`, borderRadius: 8, alignSelf: 'flex-start' },
+  stationNavText: { fontSize: 12, color: C.primary, fontWeight: '600' },
 
   mapWrap: { borderRadius: 12, overflow: 'hidden', marginTop: 8, height: 300, backgroundColor: '#E8DDD0' },
 
