@@ -1,0 +1,10 @@
+{
+  "buildCommand": "cd client && npx expo export --platform web",
+  "outputDirectory": "client/dist",
+  "installCommand": "pnpm install",
+  "framework": "expo",
+  "rewrites": [
+    { "source": "/api/v1/:path*", "destination": "https://your-backend-url.onrender.com/api/v1/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
