@@ -11,17 +11,6 @@
     "note": "火车"
   },
   {
-    "id": 2,
-    "date": "2026-09-24",
-    "category": "餐饮",
-    "sub_category": "巴勒莫市场",
-    "amount": 50,
-    "currency": "EUR",
-    "split_count": 6,
-    "per_person": 8.33,
-    "note": "街头美食"
-  },
-  {
     "id": 3,
     "date": "2026-09-24",
     "category": "门票",

@@ -388,7 +388,7 @@ function LocationCard({ location, index, isHighlighted, onPress, onUpdate, onDel
       {location.tips ? (
         <View style={styles.locTipsRow}>
           <FontAwesome6 name="lightbulb" size={11} color={C.gold} />
-          <EditableText value={location.tips} onSave={(v) => onUpdate({ tips: v })} style={{ flex: 1 }} />
+          <Text style={styles.locTipsText}>{location.tips}</Text>
         </View>
       ) : null}
 
@@ -594,6 +594,7 @@ const styles = StyleSheet.create({
   tagTextFood: { color: '#E65100' },
   tagTextShop: { color: '#7B1FA2' },
   locTipsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 8 },
+  locTipsText: { flex: 1, fontSize: 12, color: C.text, lineHeight: 18 },
   locActions: { flexDirection: 'row', gap: 14, marginTop: 10, alignItems: 'center' },
   locNavBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   locNavText: { fontSize: 11, color: C.secondary, fontWeight: '500' },

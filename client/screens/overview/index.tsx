@@ -135,9 +135,6 @@ function FlightCard({ flight }: { flight: TripInfo['flights']['outbound'] }) {
                   <View style={styles.segmentCity}>
                     <Text style={styles.segmentCityName}>{seg.departure?.city}</Text>
                     <Text style={styles.segmentTime}>{seg.departure?.time}</Text>
-                    {seg.departure?.airport && (
-                      <Text style={styles.segmentAirport}>{seg.departure.airport}</Text>
-                    )}
                   </View>
                   <View style={styles.segmentMiddle}>
                     <FontAwesome6 name="plane" size={12} color="#C75B39" />
@@ -148,7 +145,13 @@ function FlightCard({ flight }: { flight: TripInfo['flights']['outbound'] }) {
                     <Text style={styles.segmentTime}>{seg.arrival?.time}</Text>
                   </View>
                 </View>
-                <Text style={styles.segmentAirline}>{seg.airline} {seg.flightNo}</Text>
+                {/* Airport and Flight No on same line */}
+                <View style={styles.segmentInfoRow}>
+                  {seg.departure?.airport && (
+                    <Text style={styles.segmentAirport}>{seg.departure.airport}</Text>
+                  )}
+                  <Text style={styles.segmentAirline}>{seg.airline} {seg.flightNo}</Text>
+                </View>
               </View>
             </View>
           ) : (
@@ -253,7 +256,8 @@ const styles = StyleSheet.create({
   segmentAirport: { fontSize: 11, color: '#7A6B5D', marginTop: 2 },
   segmentMiddle: { alignItems: 'center', paddingHorizontal: 12 },
   segmentDuration: { fontSize: 11, color: '#7A6B5D', marginTop: 2 },
-  segmentAirline: { fontSize: 12, color: '#2B5F83', fontWeight: '500', marginTop: 4 },
+  segmentInfoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  segmentAirline: { fontSize: 12, color: '#2B5F83', fontWeight: '500' },
 
   transitBadge: {
     backgroundColor: '#FFF3E0', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4,
