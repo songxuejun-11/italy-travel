@@ -145,13 +145,12 @@ function FlightCard({ flight }: { flight: TripInfo['flights']['outbound'] }) {
                     <Text style={styles.segmentTime}>{seg.arrival?.time}</Text>
                   </View>
                 </View>
-                {/* Airport and Flight No on new line, left aligned */}
-                <View style={styles.segmentInfoRow}>
-                  {seg.departure?.airport && (
-                    <Text style={styles.segmentAirport}>{seg.departure.airport}</Text>
-                  )}
-                  <Text style={styles.segmentAirline}>{seg.airline} {seg.flightNo}</Text>
-                </View>
+                {/* Airport on new line, left aligned */}
+                {seg.departure?.airport && (
+                  <Text style={styles.segmentAirport}>{seg.departure.airport}</Text>
+                )}
+                {/* Flight No on separate line */}
+                <Text style={styles.segmentAirline}>{seg.airline} {seg.flightNo}</Text>
               </View>
             </View>
           ) : (
