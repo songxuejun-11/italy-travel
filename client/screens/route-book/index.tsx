@@ -119,12 +119,13 @@ export default function RouteBookScreen() {
     const markers = withCoords.map((l, i) => {
       const hl = highlightedLoc === l.name;
       const color = hl ? '#C75B39' : '#2B5F83';
-      const sz = hl ? 14 : 10;
-      return `L.marker([${l.lat},${l.lng}],{icon:L.divIcon({className:'m',html:'<div style=\"width:${sz}px;height:${sz}px;background:${color};border-radius:50%;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:8px;font-weight:bold;\">${i+1}</div>',iconSize:[${sz+4},${sz+4}]})}).bindPopup('${l.name}').on('click',function(){window.ReactNativeWebView.postMessage(JSON.stringify({type:'mc',name:'${l.name}'}));});`;
+      const sz = hl ? 16 : 12;
+      const label = l.name.length > 4 ? l.name.substring(0, 4) : l.name;
+      return `L.marker([${l.lat},${l.lng}],{icon:L.divIcon({className:'m',html:'<div style=\"width:auto;height:${sz}px;background:${color};border-radius:${sz/2}px;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:${hl ? 9 : 8}px;font-weight:bold;padding:0 6px;white-space:nowrap;\">${label}</div>',iconSize:[60,${sz+4}]})}).bindPopup('<b>${l.name}</b><br/>${l.nameIt || ''}').on('click',function(){window.ReactNativeWebView.postMessage(JSON.stringify({type:'mc',name:'${l.name}'}));});`;
     }).join('\n');
     const pts = withCoords.map(l => `[${l.lat},${l.lng}]`).join(',');
     const ctr = withCoords[0];
-    return `<!DOCTYPE html><html><head><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><style>body{margin:0;padding:0;}#map{width:100%;height:100vh;}</style></head><body><div id="map"></div><script>var map=L.map('map',{zoomControl:false}).setView([${ctr.lat},${ctr.lng}],13);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'OSM'}).addTo(map);${markers}${withCoords.length > 1 ? `L.polyline([${pts}],{color:'#C75B39',weight:3,opacity:0.7,dashArray:'8,8'}).addTo(map);` : ''}</script></body></html>`;
+    return `<!DOCTYPE html><html><head><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><style>body{margin:0;padding:0;}#map{width:100%;height:100vh;}.leaflet-popup-content-wrapper{border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.15);}.leaflet-popup-content{margin:8px 12px;font-family:sans-serif;}</style></head><body><div id="map"></div><script>var map=L.map('map',{zoomControl:false}).setView([${ctr.lat},${ctr.lng}],13);L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'OSM'}).addTo(map);${markers}${withCoords.length > 1 ? `L.polyline([${pts}],{color:'#C75B39',weight:3,opacity:0.7,dashArray:'8,8'}).addTo(map);` : ''}map.fitBounds(L.polyline([${pts}]).getBounds().pad(0.1));</script></body></html>`;
   };
 
   const handleWebViewMessage = (e: { nativeEvent: { data: string } }) => {
