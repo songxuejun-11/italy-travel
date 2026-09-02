@@ -145,7 +145,7 @@ function FlightCard({ flight }: { flight: TripInfo['flights']['outbound'] }) {
                     <Text style={styles.segmentTime}>{seg.arrival?.time}</Text>
                   </View>
                 </View>
-                {/* Airport and Flight No on same line */}
+                {/* Airport and Flight No on new line, left aligned */}
                 <View style={styles.segmentInfoRow}>
                   {seg.departure?.airport && (
                     <Text style={styles.segmentAirport}>{seg.departure.airport}</Text>
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   segmentAirport: { fontSize: 11, color: '#7A6B5D', marginTop: 2 },
   segmentMiddle: { alignItems: 'center', paddingHorizontal: 12 },
   segmentDuration: { fontSize: 11, color: '#7A6B5D', marginTop: 2 },
-  segmentInfoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  segmentInfoRow: { flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', marginTop: 6, gap: 8 },
   segmentAirline: { fontSize: 12, color: '#2B5F83', fontWeight: '500' },
 
   transitBadge: {
