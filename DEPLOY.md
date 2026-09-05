@@ -1,161 +1,163 @@
 # 意大利出行小助手 - 部署指南
 
-## 项目结构
+## 部署架构
 
 ```
-├── client/          # Expo Web 前端
-├── server/          # Express.js 后端
-└── server/data/     # JSON 数据存储
+前端 (Vercel) ←→ 后端 (Render)
+     ↓                ↓
+  xxx.vercel.app  xxx.onrender.com
 ```
 
-## 部署方案
+## 一、后端部署到 Render
 
-### 方案一：Vercel (前端) + Render (后端) - 推荐
+### 1. 注册 Render 账号
+访问 https://render.com 注册（支持 GitHub 登录）
 
-#### 1. 部署后端到 Render
+### 2. 创建 Web Service
+1. 点击 "New +" → "Web Service"
+2. 连接你的 GitHub 仓库
+3. 配置如下：
 
-1. 将代码推送到 GitHub
-2. 访问 [Render](https://render.com) 并登录
-3. 点击 "New +" → "Web Service"
-4. 连接你的 GitHub 仓库
-5. 配置：
-   - **Name**: italy-travel-backend
-   - **Root Directory**: server
-   - **Build Command**: `pnpm install && pnpm build`
-   - **Start Command**: `pnpm start`
-   - **Environment Variables**:
-     - `NODE_ENV`: `production`
-     - `PORT`: `9091`
-6. 点击 "Create Web Service"
-7. 部署完成后，复制后端 URL（如 `https://italy-travel-backend.onrender.com`）
+| 配置项 | 值 |
+|--------|-----|
+| Name | italy-travel-backend |
+| Region | Oregon (推荐，全球访问快) |
+| Branch | main |
+| Root Directory | server |
+| Runtime | Node |
+| Build Command | `pnpm install && pnpm build` |
+| Start Command | `pnpm start` |
+| Instance Type | Free |
 
-#### 2. 部署前端到 Vercel
+### 3. 添加环境变量
+在 Render 控制台 → Environment 添加：
 
-1. 访问 [Vercel](https://vercel.com) 并登录
-2. 点击 "Add New..." → "Project"
-3. 连接你的 GitHub 仓库
-4. 配置：
-   - **Framework Preset**: Expo
-   - **Root Directory**: client
-   - **Build Command**: `npx expo export --platform web`
-   - **Output Directory**: dist
-5. 添加环境变量：
-   - `EXPO_PUBLIC_BACKEND_BASE_URL`: `https://italy-travel-backend.onrender.com`（你的 Render 后端 URL）
-6. 点击 "Deploy"
+| Key | Value |
+|-----|-------|
+| NODE_ENV | production |
+| PORT | 9091 |
 
-#### 3. 更新前端 API 配置
-
-部署完成后，前端会自动使用 `EXPO_PUBLIC_BACKEND_BASE_URL` 环境变量连接后端。
+### 4. 部署
+点击 "Create Web Service"，等待部署完成。
+部署成功后会获得 URL：`https://italy-travel-backend.onrender.com`
 
 ---
 
-### 方案二：Railway (全栈部署)
+## 二、前端部署到 Vercel
 
-1. 访问 [Railway](https://railway.app) 并登录
-2. 点击 "New Project" → "Deploy from GitHub repo"
-3. 连接你的 GitHub 仓库
-4. 添加两个服务：
+### 1. 注册 Vercel 账号
+访问 https://vercel.com 注册（支持 GitHub 登录）
 
-#### 后端服务
-- **Root Directory**: server
-- **Build Command**: `pnpm install && pnpm build`
-- **Start Command**: `pnpm start`
-- **环境变量**: `NODE_ENV=production`, `PORT=9091`
+### 2. 导入项目
+1. 点击 "Add New..." → "Project"
+2. 选择你的 GitHub 仓库
+3. 配置如下：
 
-#### 前端服务
-- **Root Directory**: client
-- **Build Command**: `npx expo export --platform web`
-- **环境变量**: `EXPO_PUBLIC_BACKEND_BASE_URL=<后端服务URL>`
+| 配置项 | 值 |
+|--------|-----|
+| Framework Preset | Other |
+| Root Directory | client |
+| Build Command | `npx expo export --platform web` |
+| Output Directory | dist |
+| Install Command | `pnpm install` |
 
----
+### 3. 添加环境变量
+在 Vercel 控制台 → Settings → Environment Variables 添加：
 
-### 方案三：单服务器部署 (Docker)
+| Key | Value |
+|-----|-------|
+| EXPO_PUBLIC_BACKEND_BASE_URL | https://italy-travel-backend.onrender.com |
 
-#### Dockerfile (根目录)
+️ **重要**：将 URL 替换为你实际的 Render 后端 URL
 
-```dockerfile
-# 构建阶段
-FROM node:20-alpine AS builder
-WORKDIR /app
-RUN npm install -g pnpm
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY client/package.json client/
-COPY server/package.json server/
-RUN pnpm install --frozen-lockfile
-COPY . .
-RUN cd client && npx expo export --platform web
-RUN cd server && pnpm build
-
-# 运行阶段
-FROM node:20-alpine
-WORKDIR /app
-RUN npm install -g pnpm
-COPY --from=builder /app/server/dist ./server/dist
-COPY --from=builder /app/server/package.json ./server/
-COPY --from=builder /app/client/dist ./client/dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/server/node_modules ./server/node_modules
-
-EXPOSE 9091
-CMD ["node", "server/dist/index.js"]
-```
+### 4. 部署
+点击 "Deploy"，等待部署完成。
+部署成功后会获得 URL：`https://your-app.vercel.app`
 
 ---
 
-## 环境变量说明
+## 三、验证部署
 
-| 变量名 | 说明 | 示例 |
-|--------|------|------|
-| `EXPO_PUBLIC_BACKEND_BASE_URL` | 后端 API 地址 | `https://italy-travel-backend.onrender.com` |
-| `NODE_ENV` | 运行环境 | `production` |
-| `PORT` | 后端端口 | `9091` |
-
----
-
-## 数据持久化
-
-当前使用 JSON 文件存储数据（`server/data/` 目录）。生产环境建议：
-
-1. **使用数据库**：迁移到 PostgreSQL、MySQL 或 MongoDB
-2. **使用对象存储**：将 JSON 文件存储到 S3、OSS 等
-3. **使用 Supabase**：项目已集成 Supabase SDK，可直接使用
-
----
-
-## 部署后检查
-
-1. 访问前端 URL，确认页面正常加载
-2. 检查浏览器控制台，确认 API 请求正常
-3. 测试核心功能：
-   - 查看路书
-   - 添加/编辑/删除开销
-   - 勾选准备清单
-   - 查看景点预定
-
----
-
-## 常见问题
-
-### Q: 前端访问后端 API 404？
-A: 检查 `EXPO_PUBLIC_BACKEND_BASE_URL` 环境变量是否正确配置
-
-### Q: 后端服务休眠？
-A: Render 免费版服务会在 15 分钟无请求后休眠，首次访问需要等待 30-60 秒唤醒
-
-### Q: 数据丢失？
-A: JSON 文件存储在服务器本地，重启后会丢失。建议迁移到数据库
-
----
-
-## 快速部署命令
-
+### 1. 检查后端健康状态
 ```bash
-# 构建前端
-cd client && npx expo export --platform web
-
-# 构建后端
-cd server && pnpm build
-
-# 本地测试生产构建
-cd server && pnpm start
+curl https://italy-travel-backend.onrender.com/api/v1/health
 ```
+应返回：`{"status":"ok"}`
+
+### 2. 检查前端访问
+在浏览器打开 Vercel 提供的 URL，确认：
+- 页面正常加载
+- 航班信息显示正常
+- 路书地图正常显示
+- 可以添加/编辑/删除数据
+
+### 3. 检查国外访问
+使用 VPN 或请国外朋友帮忙测试访问速度。
+
+---
+
+## 四、自定义域名（可选）
+
+### Vercel 自定义域名
+1. Vercel 控制台 → Settings → Domains
+2. 添加你的域名
+3. 按提示配置 DNS
+
+### Render 自定义域名
+1. Render 控制台 → Settings → Custom Domain
+2. 添加你的域名
+3. 按提示配置 DNS
+
+---
+
+## 五、注意事项
+
+### 免费额度限制
+- **Vercel**：100GB 流量/月，足够个人使用
+- **Render**：750 小时/月（约 31 天），如果 24 小时运行会超限
+  - 解决方案：设置自动休眠，或升级到 $7/月
+
+### 数据持久化
+当前使用 JSON 文件存储，Render 重启后数据会保留（除非重新部署）。
+如需更可靠的数据存储，建议后续迁移到 PostgreSQL。
+
+### 环境变量
+- 前端环境变量以 `EXPO_PUBLIC_` 开头会暴露给客户端
+- 后端环境变量不会暴露给客户端
+
+---
+
+## 六、故障排查
+
+### 前端无法连接后端
+1. 检查 Vercel 环境变量 `EXPO_PUBLIC_BACKEND_BASE_URL` 是否正确
+2. 检查 Render 后端是否正常运行
+3. 检查 CORS 配置（后端已配置允许所有来源）
+
+### 后端部署失败
+1. 检查 `server/package.json` 中的依赖是否完整
+2. 检查构建日志，确认 `pnpm build` 成功
+3. 确认 Node.js 版本兼容（推荐 18+）
+
+### 前端部署失败
+1. 检查 `client/package.json` 中的依赖是否完整
+2. 确认 `npx expo export --platform web` 命令成功
+3. 检查 Metro 配置是否正确
+
+---
+
+## 七、部署后优化
+
+### 性能优化
+- 启用 Vercel 的 Edge Cache
+- 压缩图片资源
+- 使用 CDN 加速静态资源
+
+### 安全优化
+- 限制 CORS 允许的来源
+- 添加 API 限流
+- 使用 HTTPS（已自动启用）
+
+### 监控
+- 使用 Vercel Analytics 监控前端性能
+- 使用 Render 监控后端健康状态

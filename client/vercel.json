@@ -1,7 +1,7 @@
 {
-  "buildCommand": "cd .. && pnpm install && cd client && npx expo export --platform web",
+  "buildCommand": "npx expo export --platform web",
   "outputDirectory": "dist",
-  "installCommand": "cd .. && pnpm install",
+  "installCommand": "pnpm install",
   "framework": null,
   "cleanUrls": true,
   "rewrites": [
