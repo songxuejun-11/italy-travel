@@ -1,29 +1,10 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    },
-    {
-      "src": "server/src/index.ts",
-      "use": "@vercel/node"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "server/src/index.ts"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "client/$1"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+  "buildCommand": "cd client && npx expo export --platform web",
+  "outputDirectory": "client/dist",
+  "installCommand": "pnpm install",
+  "framework": "expo",
+  "rewrites": [
+    { "source": "/api/v1/:path*", "destination": "https://your-backend-url.onrender.com/api/v1/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
