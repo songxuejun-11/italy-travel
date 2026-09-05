@@ -1,40 +1,24 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// Vercel Serverless Functions 使用内存存储
+// 从 seed-data.json 加载初始数据
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.join(__dirname, '..', 'data');
-
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+import seedDataRaw from './seed-data.json' with { type: 'json' };
 
 interface Store {
-  [key: string]: unknown;
+  [key: string]: unknown[];
 }
 
-function getFilePath(name: string): string {
-  return path.join(DATA_DIR, `${name}.json`);
-}
+// 内存存储
+const memoryStore: Store = { ...seedDataRaw };
 
 function readStore<T = unknown>(name: string, defaultValue: T): T {
-  const filePath = getFilePath(name);
-  if (!fs.existsSync(filePath)) {
-    writeStore(name, defaultValue);
-    return defaultValue;
+  if (memoryStore[name]) {
+    return memoryStore[name] as T;
   }
-  try {
-    const data = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(data) as T;
-  } catch {
-    return defaultValue;
-  }
+  return defaultValue;
 }
 
 function writeStore<T>(name: string, data: T): void {
-  const filePath = getFilePath(name);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+  memoryStore[name] = data as unknown[];
 }
 
 // Simple ID generator
