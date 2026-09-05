@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity,
-  TextInput, Alert, LayoutAnimation, Platform,
+  TextInput, Alert, Platform,
 } from 'react-native';
 import { Screen } from '@/components/Screen';
 import {
@@ -22,9 +22,21 @@ const COLORS = {
   success: '#5B8C3E',
 };
 
+const CATEGORIES = ['必需品', '衣物', '日常洗漱', '电子产品', '化妆品', '杂物'];
+
+const CATEGORY_ICONS: Record<string, keyof typeof FontAwesome6.glyphMap> = {
+  '必需品': 'passport',
+  '衣物': 'shirt',
+  '日常洗漱': 'pump-soap',
+  '电子产品': 'plug',
+  '化妆品': 'wand-magic-sparkles',
+  '杂物': 'box-open',
+};
+
 export default function PreparationScreen() {
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [newItem, setNewItem] = useState('');
+  const [newCategory, setNewCategory] = useState('杂物');
   const [isAdding, setIsAdding] = useState(false);
 
   const loadItems = useCallback(() => {
@@ -41,7 +53,7 @@ export default function PreparationScreen() {
 
   const handleAdd = async () => {
     if (!newItem.trim()) return;
-    await createChecklistItem(newItem.trim());
+    await createChecklistItem(newItem.trim(), newCategory);
     setNewItem('');
     setIsAdding(false);
     loadItems();
@@ -60,6 +72,12 @@ export default function PreparationScreen() {
       ]);
     }
   };
+
+  // Group items by category
+  const itemsByCategory = CATEGORIES.reduce((acc, cat) => {
+    acc[cat] = items.filter(i => i.category === cat);
+    return acc;
+  }, {} as Record<string, ChecklistItem[]>);
 
   const checkedCount = items.filter(i => i.checked).length;
   const progress = items.length > 0 ? checkedCount / items.length : 0;
@@ -81,54 +99,85 @@ export default function PreparationScreen() {
           <Text style={styles.progressText}>{Math.round(progress * 100)}%</Text>
         </View>
 
-        {/* Items */}
-        <View style={styles.listContainer}>
-          {items.map((item) => (
-            <View key={item.id} style={[styles.item, item.checked ? styles.itemChecked : null]}>
-              <TouchableOpacity
-                style={[styles.checkbox, item.checked ? styles.checkboxChecked : null]}
-                onPress={() => handleToggle(item)}
-              >
-                {item.checked ? <FontAwesome6 name="check" size={12} color="#FFF" /> : null}
-              </TouchableOpacity>
-              <Text
-                style={[styles.itemLabel, item.checked ? styles.itemLabelChecked : null]}
-                onPress={() => handleToggle(item)}
-              >
-                {item.label}
-              </Text>
-              <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
-                <View style={styles.deleteBtnInner}>
-                  <FontAwesome6 name="trash-can" size={13} color={COLORS.muted} />
-                </View>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
+        {/* Categories */}
+        {CATEGORIES.map((category) => {
+          const categoryItems = itemsByCategory[category] || [];
+          if (categoryItems.length === 0) return null;
 
-        {/* Add Item */}
+          const categoryChecked = categoryItems.filter(i => i.checked).length;
+          const icon = CATEGORY_ICONS[category] || 'box-open';
+
+          return (
+            <View key={category} style={styles.categorySection}>
+              <View style={styles.categoryHeader}>
+                <View style={styles.categoryIcon}>
+                  <FontAwesome6 name={icon} size={16} color={COLORS.primary} />
+                </View>
+                <Text style={styles.categoryTitle}>{category}</Text>
+                <Text style={styles.categoryCount}>{categoryChecked}/{categoryItems.length}</Text>
+              </View>
+
+              {categoryItems.map((item) => (
+                <View key={item.id} style={[styles.item, item.checked ? styles.itemChecked : null]}>
+                  <TouchableOpacity
+                    style={[styles.checkbox, item.checked ? styles.checkboxChecked : null]}
+                    onPress={() => handleToggle(item)}
+                  >
+                    {item.checked ? <FontAwesome6 name="check" size={12} color="#FFF" /> : null}
+                  </TouchableOpacity>
+                  <Text
+                    style={[styles.itemLabel, item.checked ? styles.itemLabelChecked : null]}
+                    onPress={() => handleToggle(item)}
+                  >
+                    {item.label}
+                  </Text>
+                  <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(item)}>
+                    <FontAwesome6 name="trash-can" size={14} color="#C75B39" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          );
+        })}
+
+        {/* Add Button */}
         {isAdding ? (
           <View style={styles.addContainer}>
-            <TextInput
-              style={styles.addInput}
-              value={newItem}
-              onChangeText={setNewItem}
-              placeholder="输入物品名称..."
-              placeholderTextColor={COLORS.muted}
-              autoFocus
-              onSubmitEditing={handleAdd}
-            />
-            <TouchableOpacity style={styles.addBtn} onPress={handleAdd}>
-              <FontAwesome6 name="check" size={14} color="#FFF" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => { setIsAdding(false); setNewItem(''); }}>
-              <FontAwesome6 name="xmark" size={14} color={COLORS.muted} />
-            </TouchableOpacity>
+            <View style={styles.addInputRow}>
+              <TextInput
+                style={styles.addInput}
+                placeholder="物品名称"
+                value={newItem}
+                onChangeText={setNewItem}
+                placeholderTextColor={COLORS.muted}
+              />
+              <View style={styles.categoryPicker}>
+                {CATEGORIES.slice(0, 3).map((cat) => (
+                  <TouchableOpacity
+                    key={cat}
+                    style={[styles.categoryChip, newCategory === cat && styles.categoryChipActive]}
+                    onPress={() => setNewCategory(cat)}
+                  >
+                    <Text style={[styles.categoryChipText, newCategory === cat && styles.categoryChipTextActive]}>
+                      {cat}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+            <View style={styles.addButtons}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => { setIsAdding(false); setNewItem(''); }}>
+                <Text style={styles.cancelBtnText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.confirmBtn} onPress={handleAdd}>
+                <Text style={styles.confirmBtnText}>添加</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         ) : (
-          <TouchableOpacity style={styles.addButton} onPress={() => setIsAdding(true)}>
-            <FontAwesome6 name="plus" size={14} color={COLORS.primary} />
-            <Text style={styles.addButtonText}>添加物品</Text>
+          <TouchableOpacity style={styles.addBtn} onPress={() => setIsAdding(true)}>
+            <FontAwesome6 name="plus" size={18} color={COLORS.primary} />
+            <Text style={styles.addBtnText}>添加物品</Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -137,65 +186,43 @@ export default function PreparationScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: { paddingBottom: 100 },
-
-  header: {
-    backgroundColor: COLORS.primary, paddingTop: 56, paddingBottom: 24, paddingHorizontal: 24,
-    borderBottomLeftRadius: 28, borderBottomRightRadius: 28,
-  },
-  title: { fontSize: 24, fontWeight: '800', color: '#FFF' },
-  subtitle: { fontSize: 14, color: 'rgba(255,255,255,0.8)', marginTop: 6 },
-
-  progressContainer: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginTop: 20, gap: 12,
-  },
+  container: { flex: 1, backgroundColor: COLORS.bg },
+  content: { padding: 20, paddingBottom: 40 },
+  header: { marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: 'bold', color: COLORS.text },
+  subtitle: { fontSize: 14, color: COLORS.muted, marginTop: 4 },
+  progressContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 24, gap: 12 },
   progressBar: { flex: 1, height: 8, backgroundColor: COLORS.border, borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: COLORS.success, borderRadius: 4 },
-  progressText: { fontSize: 14, fontWeight: '700', color: COLORS.success, minWidth: 40, textAlign: 'right' },
+  progressFill: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 4 },
+  progressText: { fontSize: 14, fontWeight: '600', color: COLORS.primary, minWidth: 40, textAlign: 'right' },
 
-  listContainer: { paddingHorizontal: 20, marginTop: 20 },
-  item: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.surface,
-    borderRadius: 14, padding: 14, marginBottom: 8,
-    shadowColor: COLORS.primary, shadowOpacity: 0.03, shadowRadius: 4, shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
-  },
-  itemChecked: { opacity: 0.6 },
-  checkbox: {
-    width: 24, height: 24, borderRadius: 8, borderWidth: 2, borderColor: COLORS.border,
-    justifyContent: 'center', alignItems: 'center', marginRight: 12,
-  },
-  checkboxChecked: { backgroundColor: COLORS.success, borderColor: COLORS.success },
-  itemLabel: { fontSize: 15, color: COLORS.text, flex: 1, fontWeight: '500' },
+  categorySection: { marginBottom: 20 },
+  categoryHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
+  categoryIcon: { width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(199,91,57,0.1)', alignItems: 'center', justifyContent: 'center' },
+  categoryTitle: { fontSize: 16, fontWeight: '600', color: COLORS.text, flex: 1 },
+  categoryCount: { fontSize: 13, color: COLORS.muted },
+
+  item: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16, backgroundColor: COLORS.surface, borderRadius: 12, marginBottom: 8, shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2 },
+  itemChecked: { opacity: 0.7 },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: COLORS.border, marginRight: 12, alignItems: 'center', justifyContent: 'center' },
+  checkboxChecked: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  itemLabel: { flex: 1, fontSize: 15, color: COLORS.text },
   itemLabelChecked: { textDecorationLine: 'line-through', color: COLORS.muted },
-  deleteBtn: { padding: 4 },
-  deleteBtnInner: {
-    width: 30, height: 30, borderRadius: 8, backgroundColor: '#FFEBEE',
-    justifyContent: 'center', alignItems: 'center',
-  },
+  deleteBtn: { padding: 8, opacity: 0.6 },
 
-  addContainer: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, marginTop: 16, gap: 8,
-  },
-  addInput: {
-    flex: 1, backgroundColor: COLORS.surface, borderRadius: 12, padding: 12,
-    fontSize: 14, color: COLORS.text, borderWidth: 1, borderColor: COLORS.border,
-  },
-  addBtn: {
-    width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.primary,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  cancelBtn: {
-    width: 40, height: 40, borderRadius: 12, backgroundColor: COLORS.bg,
-    justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: COLORS.border,
-  },
-
-  addButton: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    marginHorizontal: 20, marginTop: 16, padding: 14,
-    borderRadius: 14, borderWidth: 1.5, borderColor: COLORS.primary, borderStyle: 'dashed',
-    gap: 8,
-  },
-  addButtonText: { fontSize: 14, color: COLORS.primary, fontWeight: '600' },
+  addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, backgroundColor: COLORS.surface, borderRadius: 12, borderWidth: 1, borderColor: COLORS.border, borderStyle: 'dashed', gap: 8, marginTop: 8 },
+  addBtnText: { fontSize: 15, color: COLORS.primary, fontWeight: '500' },
+  addContainer: { backgroundColor: COLORS.surface, borderRadius: 12, padding: 16, marginTop: 8 },
+  addInputRow: { gap: 12 },
+  addInput: { borderWidth: 1, borderColor: COLORS.border, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: COLORS.text, backgroundColor: COLORS.bg },
+  categoryPicker: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  categoryChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, backgroundColor: COLORS.bg, borderWidth: 1, borderColor: COLORS.border },
+  categoryChipActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  categoryChipText: { fontSize: 13, color: COLORS.muted },
+  categoryChipTextActive: { color: '#FFF' },
+  addButtons: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  cancelBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: COLORS.bg, alignItems: 'center' },
+  cancelBtnText: { fontSize: 15, color: COLORS.muted, fontWeight: '500' },
+  confirmBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, backgroundColor: COLORS.primary, alignItems: 'center' },
+  confirmBtnText: { fontSize: 15, color: '#FFF', fontWeight: '600' },
 });

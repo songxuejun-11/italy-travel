@@ -101,9 +101,9 @@ app.get('/api/v1/checklist', (_req, res) => {
 
 app.post('/api/v1/checklist', (req, res) => {
   const items = readStore<ChecklistRecord[]>('checklist', []);
-  const { label } = req.body;
+  const { label, category } = req.body;
   const maxOrder = items.reduce((max, i) => Math.max(max, i.sort_order), 0);
-  const newItem: ChecklistRecord = { id: nextId(), label, checked: 0, sort_order: maxOrder + 1 };
+  const newItem: ChecklistRecord = { id: nextId(), label, checked: 0, category: category || '杂物', sort_order: maxOrder + 1 };
   items.push(newItem);
   writeStore('checklist', items);
   res.json({ id: newItem.id });
@@ -113,8 +113,8 @@ app.put('/api/v1/checklist/:id', (req, res) => {
   const items = readStore<ChecklistRecord[]>('checklist', []);
   const idx = items.findIndex(i => i.id === Number(req.params.id));
   if (idx === -1) return res.status(404).json({ error: 'Not found' });
-  const { label, checked, sort_order } = req.body;
-  items[idx] = { ...items[idx], label, checked: checked ? 1 : 0, sort_order };
+  const { label, checked, category, sort_order } = req.body;
+  items[idx] = { ...items[idx], label, checked: checked ? 1 : 0, category, sort_order };
   writeStore('checklist', items);
   res.json({ success: true });
 });
