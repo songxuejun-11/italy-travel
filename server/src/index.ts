@@ -20,13 +20,13 @@ app.get('/api/v1/health', (_req, res) => {
 
 // ===== Trip Config =====
 app.get('/api/v1/trip-info', (_req, res) => {
-  const data = readStore('trip-info', null);
-  if (!data || !Array.isArray(data) || data.length === 0) return res.status(404).json({ error: 'Not found' });
-  res.json(data[0]);
+  const data = readStore('trip_info', null);
+  if (!data) return res.status(404).json({ error: 'Not found' });
+  res.json(data);
 });
 
 app.put('/api/v1/trip-info', (req, res) => {
-  writeStore('trip-info', req.body);
+  writeStore('trip_info', req.body);
   res.json({ success: true });
 });
 
