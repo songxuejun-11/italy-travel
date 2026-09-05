@@ -1,1 +1,127 @@
-null
+{
+  "title": "挚友十年行",
+  "dateRange": "2026/9/23 - 2026/10/6",
+  "totalDays": 14,
+  "travelDays": 11,
+  "destination": "意大利（西西里岛 → 南意大利 → 罗马）",
+  "cities": [
+    "北京",
+    "巴勒莫",
+    "陶尔米纳",
+    "锡拉库萨",
+    "那不勒斯",
+    "庞贝",
+    "罗马",
+    "北京"
+  ],
+  "notices": {
+    "transport": [
+      "火车纸质票上车前必须自行检票打卡。建议将票紧贴打票机最左侧插入，成功时机器亮绿灯，同时检查票上是否有打票时间，确认成功后再上车，否则会被罚款。",
+      "出行前均需提前一天确认火车时刻，意大利火车延误或提前发车风险较大",
+      "需提前30分钟抵达火车站"
+    ],
+    "travel": [
+      "防盗！防盗！防盗！手机握手里，包包放怀里",
+      "带水、带伞、带纸巾、带现金。意大利喝水要钱、上厕所要钱"
+    ],
+    "daily": "意大利大部分自来水为硬水，可尝试公共直饮水点，建议烧水或购买瓶装水。瓶装水分两种：Naturale（纯净水）、Frizzante（气泡水）"
+  },
+  "flights": {
+    "outbound": {
+      "title": "去程：北京 → 巴勒莫",
+      "date": "9/24（当地时间）",
+      "segments": [
+        {
+          "type": "flight",
+          "label": "第一段",
+          "departure": {
+            "city": "北京",
+            "time": "9/24 00:10",
+            "airport": "北京首都T1"
+          },
+          "arrival": {
+            "city": "伊斯坦布尔",
+            "time": "9/24 05:30"
+          },
+          "duration": "10.5h",
+          "airline": "土耳其航空",
+          "flightNo": "TK89"
+        },
+        {
+          "type": "transit",
+          "label": "中转",
+          "duration": "1.5h",
+          "location": "伊斯坦布尔机场"
+        },
+        {
+          "type": "flight",
+          "label": "第二段",
+          "departure": {
+            "city": "伊斯坦布尔",
+            "time": "9/24 06:50"
+          },
+          "arrival": {
+            "city": "巴勒莫",
+            "time": "9/24 08:25"
+          },
+          "duration": "2.5h",
+          "airline": "土耳其航空",
+          "flightNo": "TK1373"
+        }
+      ],
+      "tips": [
+        "提前24h通过土耳其航空官网或APP提前选座",
+        "托运时要求箱子贴上\"优先\"贴纸，确认是否可以正常中转",
+        "中转时间很短（1.5h），下飞机后需快速前往转机",
+        "第二段出海关时不能太慢，最好亲眼等到行李出来"
+      ]
+    },
+    "inbound": {
+      "title": "返程：罗马 → 北京",
+      "date": "10/5-10/6（当地时间）",
+      "segments": [
+        {
+          "type": "flight",
+          "label": "第一段",
+          "departure": {
+            "city": "罗马",
+            "time": "10/5 14:55",
+            "airport": "罗马 Fiumicino T1"
+          },
+          "arrival": {
+            "city": "法兰克福",
+            "time": "10/5 16:55"
+          },
+          "duration": "2h",
+          "airline": "汉莎航空",
+          "flightNo": "LH235"
+        },
+        {
+          "type": "transit",
+          "label": "中转",
+          "duration": "3h",
+          "location": "法兰克福机场"
+        },
+        {
+          "type": "flight",
+          "label": "第二段",
+          "departure": {
+            "city": "法兰克福",
+            "time": "10/5 19:50"
+          },
+          "arrival": {
+            "city": "北京",
+            "time": "10/6 11:15"
+          },
+          "duration": "9.5h",
+          "airline": "国航",
+          "flightNo": "CA932"
+        }
+      ],
+      "tips": [
+        "坐罗马机场快线到机场：导航\"Roma Termini\"，寻找红色1号车牌",
+        "值机时确认行李是否可直挂北京"
+      ]
+    }
+  }
+}
