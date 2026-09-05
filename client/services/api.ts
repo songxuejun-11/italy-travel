@@ -34,8 +34,8 @@ export const deleteExpense = (id: number) =>
 
 // Checklist
 export const getChecklist = () => request<ChecklistItem[]>('/checklist');
-export const createChecklistItem = (label: string) =>
-  request<{ id: number }>('/checklist', { method: 'POST', body: JSON.stringify({ label }) });
+export const createChecklistItem = (label: string, category?: string) =>
+  request<{ id: number }>('/checklist', { method: 'POST', body: JSON.stringify({ label, category }) });
 export const updateChecklistItem = (item: ChecklistItem) =>
   request<{ success: boolean }>(`/checklist/${item.id}`, { method: 'PUT', body: JSON.stringify(item) });
 export const deleteChecklistItem = (id: number) =>

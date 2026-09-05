@@ -3,72 +3,329 @@
     "id": 1,
     "label": "护照",
     "checked": 0,
-    "sort_order": 1
+    "sort_order": 1,
+    "category": "必需品"
   },
   {
     "id": 2,
     "label": "现金（欧元）",
     "checked": 0,
-    "sort_order": 2
+    "sort_order": 2,
+    "category": "必需品"
   },
   {
     "id": 3,
     "label": "信用卡（Visa/Mastercard）",
     "checked": 0,
-    "sort_order": 3
+    "sort_order": 3,
+    "category": "必需品"
   },
   {
     "id": 4,
-    "label": "充电宝",
+    "label": "身份证",
     "checked": 0,
-    "sort_order": 4
+    "sort_order": 4,
+    "category": "必需品"
   },
   {
     "id": 5,
-    "label": "转换插头",
+    "label": "机票行程单",
     "checked": 0,
-    "sort_order": 5
+    "sort_order": 5,
+    "category": "必需品"
   },
   {
     "id": 6,
-    "label": "雨伞",
+    "label": "酒店预订确认单",
     "checked": 0,
-    "sort_order": 6
+    "sort_order": 6,
+    "category": "必需品"
   },
   {
     "id": 7,
-    "label": "墨镜",
+    "label": "旅行保险单",
     "checked": 0,
-    "sort_order": 7
+    "sort_order": 7,
+    "category": "必需品"
   },
   {
     "id": 8,
-    "label": "防晒霜",
+    "label": "紧急联系人信息",
     "checked": 0,
-    "sort_order": 8
+    "sort_order": 8,
+    "category": "必需品"
   },
   {
     "id": 9,
-    "label": "披肩外套",
+    "label": "短袖T恤（3-4件）",
     "checked": 0,
-    "sort_order": 9
+    "sort_order": 9,
+    "category": "衣物"
   },
   {
     "id": 10,
-    "label": "相机",
+    "label": "长裤（2条）",
     "checked": 0,
-    "sort_order": 10
+    "sort_order": 10,
+    "category": "衣物"
   },
   {
     "id": 11,
-    "label": "常用药品",
+    "label": "短裤/裙子（1-2件）",
     "checked": 0,
-    "sort_order": 11
+    "sort_order": 11,
+    "category": "衣物"
   },
   {
     "id": 12,
-    "label": "洗漱用品",
+    "label": "披肩外套",
     "checked": 0,
-    "sort_order": 12
+    "sort_order": 12,
+    "category": "衣物"
+  },
+  {
+    "id": 13,
+    "label": "薄毛衣/卫衣",
+    "checked": 0,
+    "sort_order": 13,
+    "category": "衣物"
+  },
+  {
+    "id": 14,
+    "label": "内衣裤（4-5套）",
+    "checked": 0,
+    "sort_order": 14,
+    "category": "衣物"
+  },
+  {
+    "id": 15,
+    "label": "袜子（4-5双）",
+    "checked": 0,
+    "sort_order": 15,
+    "category": "衣物"
+  },
+  {
+    "id": 16,
+    "label": "舒适步行鞋",
+    "checked": 0,
+    "sort_order": 16,
+    "category": "衣物"
+  },
+  {
+    "id": 17,
+    "label": "拖鞋",
+    "checked": 0,
+    "sort_order": 17,
+    "category": "衣物"
+  },
+  {
+    "id": 18,
+    "label": "帽子",
+    "checked": 0,
+    "sort_order": 18,
+    "category": "衣物"
+  },
+  {
+    "id": 19,
+    "label": "牙刷",
+    "checked": 0,
+    "sort_order": 19,
+    "category": "日常洗漱"
+  },
+  {
+    "id": 20,
+    "label": "牙膏",
+    "checked": 0,
+    "sort_order": 20,
+    "category": "日常洗漱"
+  },
+  {
+    "id": 21,
+    "label": "洗发水/护发素",
+    "checked": 0,
+    "sort_order": 21,
+    "category": "日常洗漱"
+  },
+  {
+    "id": 22,
+    "label": "沐浴露",
+    "checked": 0,
+    "sort_order": 22,
+    "category": "日常洗漱"
+  },
+  {
+    "id": 23,
+    "label": "洗面奶",
+    "checked": 0,
+    "sort_order": 23,
+    "category": "日常洗漱"
+  },
+  {
+    "id": 24,
+    "label": "毛巾",
+    "checked": 0,
+    "sort_order": 24,
+    "category": "日常洗漱"
+  },
+  {
+    "id": 25,
+    "label": "梳子",
+    "checked": 0,
+    "sort_order": 25,
+    "category": "日常洗漱"
+  },
+  {
+    "id": 26,
+    "label": "手机",
+    "checked": 0,
+    "sort_order": 26,
+    "category": "电子产品"
+  },
+  {
+    "id": 27,
+    "label": "充电器",
+    "checked": 0,
+    "sort_order": 27,
+    "category": "电子产品"
+  },
+  {
+    "id": 28,
+    "label": "充电宝",
+    "checked": 0,
+    "sort_order": 28,
+    "category": "电子产品"
+  },
+  {
+    "id": 29,
+    "label": "转换插头（欧标）",
+    "checked": 0,
+    "sort_order": 29,
+    "category": "电子产品"
+  },
+  {
+    "id": 30,
+    "label": "相机",
+    "checked": 0,
+    "sort_order": 30,
+    "category": "电子产品"
+  },
+  {
+    "id": 31,
+    "label": "相机充电器",
+    "checked": 0,
+    "sort_order": 31,
+    "category": "电子产品"
+  },
+  {
+    "id": 32,
+    "label": "存储卡",
+    "checked": 0,
+    "sort_order": 32,
+    "category": "电子产品"
+  },
+  {
+    "id": 33,
+    "label": "耳机",
+    "checked": 0,
+    "sort_order": 33,
+    "category": "电子产品"
+  },
+  {
+    "id": 34,
+    "label": "防晒霜",
+    "checked": 0,
+    "sort_order": 34,
+    "category": "化妆品"
+  },
+  {
+    "id": 35,
+    "label": "保湿霜",
+    "checked": 0,
+    "sort_order": 35,
+    "category": "化妆品"
+  },
+  {
+    "id": 36,
+    "label": "润唇膏",
+    "checked": 0,
+    "sort_order": 36,
+    "category": "化妆品"
+  },
+  {
+    "id": 37,
+    "label": "化妆包",
+    "checked": 0,
+    "sort_order": 37,
+    "category": "化妆品"
+  },
+  {
+    "id": 38,
+    "label": "卸妆用品",
+    "checked": 0,
+    "sort_order": 38,
+    "category": "化妆品"
+  },
+  {
+    "id": 39,
+    "label": "雨伞",
+    "checked": 0,
+    "sort_order": 39,
+    "category": "杂物"
+  },
+  {
+    "id": 40,
+    "label": "墨镜",
+    "checked": 0,
+    "sort_order": 40,
+    "category": "杂物"
+  },
+  {
+    "id": 41,
+    "label": "常用药品",
+    "checked": 0,
+    "sort_order": 41,
+    "category": "杂物"
+  },
+  {
+    "id": 42,
+    "label": "创可贴",
+    "checked": 0,
+    "sort_order": 42,
+    "category": "杂物"
+  },
+  {
+    "id": 43,
+    "label": "湿巾/纸巾",
+    "checked": 0,
+    "sort_order": 43,
+    "category": "杂物"
+  },
+  {
+    "id": 44,
+    "label": "水杯",
+    "checked": 0,
+    "sort_order": 44,
+    "category": "杂物"
+  },
+  {
+    "id": 45,
+    "label": "小背包",
+    "checked": 0,
+    "sort_order": 45,
+    "category": "杂物"
+  },
+  {
+    "id": 46,
+    "label": "行李锁",
+    "checked": 0,
+    "sort_order": 46,
+    "category": "杂物"
+  },
+  {
+    "id": 47,
+    "label": "洗衣袋",
+    "checked": 0,
+    "sort_order": 47,
+    "category": "杂物"
   }
 ]

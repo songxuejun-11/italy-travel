@@ -101,9 +101,9 @@ app.get('/api/v1/checklist', (_req, res) => {
 
 app.post('/api/v1/checklist', (req, res) => {
   const items = readStore<ChecklistRecord[]>('checklist', []);
-  const { label } = req.body;
+  const { label, category } = req.body;
   const maxOrder = items.reduce((max, i) => Math.max(max, i.sort_order), 0);
-  const newItem: ChecklistRecord = { id: nextId(), label, checked: 0, sort_order: maxOrder + 1 };
+  const newItem: ChecklistRecord = { id: nextId(), label, checked: 0, sort_order: maxOrder + 1, category: category || '杂物' };
   items.push(newItem);
   writeStore('checklist', items);
   res.json({ id: newItem.id });
