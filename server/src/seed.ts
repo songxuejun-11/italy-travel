@@ -50,8 +50,10 @@ export function seedIfNeeded() {
   // Trip Info
   const tripInfo = {
     title: '挚友十年行',
-    start_date: '2026-09-23',
-    end_date: '2026-10-06',
+    dateRange: '2026.9.23 - 10.6',
+    totalDays: 14,
+    travelDays: 11,
+    destination: '意大利',
     cities: ['北京', '巴勒莫', '陶尔米纳', '锡拉库萨', '那不勒斯', '庞贝', '罗马'],
     hand_drawn_map_url: '',
     notices: {
@@ -64,17 +66,16 @@ export function seedIfNeeded() {
         '防盗！防盗！防盗！手机握手里，包包放怀里',
         '带水、带伞、带纸巾、带现金。意大利喝水要钱、上厕所要钱',
       ],
-      daily: [
-        '意大利大部分自来水为硬水，可尝试公共直饮水点，建议烧水或购买瓶装水。瓶装水分两种：Naturale（无气）和Frizzante（有气）',
-      ],
+      daily: '意大利大部分自来水为硬水，可尝试公共直饮水点，建议烧水或购买瓶装水。瓶装水分两种：Naturale（无气）和Frizzante（有气）',
     },
     flights: {
       outbound: {
+        title: '去程',
         date: '9/24',
         segments: [
-          { leg: '第一段', from: '北京 00:10', to: '伊斯坦布尔 05:30', duration: '10.5h', airline: '土耳其航空 TK89', airport: '北京首都T1' },
-          { leg: '中转', from: '—', to: '—', duration: '1.5h', airline: '—', airport: '伊斯坦布尔机场' },
-          { leg: '第二段', from: '伊斯坦布尔 06:50', to: '巴勒莫 08:25', duration: '2.5h', airline: '土耳其航空 TK1373', airport: '—' },
+          { type: 'flight', label: '第一段', departure: { city: '北京', time: '00:10', airport: '北京首都T1' }, arrival: { city: '伊斯坦布尔', time: '05:30' }, duration: '10.5h', airline: '土耳其航空', flightNo: 'TK89' },
+          { type: 'transit', label: '中转', duration: '1.5h', location: '伊斯坦布尔机场' },
+          { type: 'flight', label: '第二段', departure: { city: '伊斯坦布尔', time: '06:50' }, arrival: { city: '巴勒莫', time: '08:25' }, duration: '2.5h', airline: '土耳其航空', flightNo: 'TK1373' },
         ],
         tips: [
           '提前24h通过土耳其航空官网或APP提前选座（免费值机为随机选座，指定座位需付费）',
@@ -84,11 +85,12 @@ export function seedIfNeeded() {
         ],
       },
       inbound: {
+        title: '返程',
         date: '10/5-10/6',
         segments: [
-          { leg: '第一段', from: '罗马 14:55', to: '法兰克福 16:55', duration: '2h', airline: '汉莎航空 LH235', airport: '罗马 Fiumicino T1' },
-          { leg: '中转', from: '—', to: '—', duration: '3h', airline: '—', airport: '法兰克福机场' },
-          { leg: '第二段', from: '法兰克福 19:50', to: '北京 11:15(+1)', duration: '9.5h', airline: '国航 CA932', airport: '—' },
+          { type: 'flight', label: '第一段', departure: { city: '罗马', time: '14:55', airport: '罗马 Fiumicino T1' }, arrival: { city: '法兰克福', time: '16:55' }, duration: '2h', airline: '汉莎航空', flightNo: 'LH235' },
+          { type: 'transit', label: '中转', duration: '3h', location: '法兰克福机场' },
+          { type: 'flight', label: '第二段', departure: { city: '法兰克福', time: '19:50' }, arrival: { city: '北京', time: '11:15(+1)' }, duration: '9.5h', airline: '国航', flightNo: 'CA932' },
         ],
         tips: [
           '坐罗马机场快线到机场：在谷歌地图导航"Roma Termini"，寻找标有"FERMATA BUS STOP"的红色1号车牌',
