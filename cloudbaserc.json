@@ -1,0 +1,19 @@
+{
+  "envId": "zys-personal-env-d3ew4cz73a493b1",
+  "region": "ap-singapore",
+  "version": "2.0",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    {
+      "name": "api",
+      "isHttp": true,
+      "timeout": 15,
+      "runtime": "Nodejs20.19",
+      "installDependency": false,
+      "envVariables": {
+        "TCB_ENV": "zys-personal-env-d3ew4cz73a493b1",
+        "TCB_REGION": "ap-singapore"
+      }
+    }
+  ]
+}

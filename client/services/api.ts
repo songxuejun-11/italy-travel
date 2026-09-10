@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_BASE_URL;
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -49,6 +51,38 @@ export const updateBooking = (id: number, data: CreateBooking) =>
   request<{ success: boolean }>(`/bookings/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteBooking = (id: number) =>
   request<{ success: boolean }>(`/bookings/${id}`, { method: 'DELETE' });
+
+// Booking 附件（multipart 上传，不能用统一的 JSON request）
+const uploadUrl = (bookingId: number) => `${BASE_URL}/api/v1/bookings/${bookingId}/attachments`;
+export const uploadBookingAttachments = async (
+  bookingId: number,
+  files: { uri: string; name: string; mimeType?: string; file?: File }[],
+): Promise<BookingAttachment[]> => {
+  const form = new FormData();
+  for (const f of files) {
+    if (Platform.OS === 'web') {
+      // web：浏览器 FormData 不认 RN 的 {uri,type} 对象，需要 Blob/File
+      if (f.file) {
+        form.append('files', f.file, f.name);
+      } else {
+        const blob = await (await fetch(f.uri)).blob();
+        form.append('files', blob, f.name);
+      }
+    } else {
+      // 原生：RN FormData 支持 {uri, name, type}
+      form.append('files', { uri: f.uri, name: f.name, type: f.mimeType || 'application/octet-stream' } as unknown as Blob);
+    }
+  }
+  const res = await fetch(uploadUrl(bookingId), { method: 'POST', body: form });
+  if (!res.ok) throw new Error(`API error: ${res.status}`);
+  const data = await res.json();
+  return data.attachments;
+};
+export const deleteBookingAttachment = (bookingId: number, attachmentId: number) =>
+  request<{ success: boolean }>(`/bookings/${bookingId}/attachments/${attachmentId}`, { method: 'DELETE' });
+
+/** 附件的完整访问地址（path 存的是相对路径） */
+export const attachmentUrl = (path: string) => `${BASE_URL}${path}`;
 
 // Types
 export interface TripInfo {
@@ -169,6 +203,14 @@ export interface ChecklistItem {
   sort_order: number;
 }
 
+export interface BookingAttachment {
+  id: number;
+  name: string;
+  type: string;
+  size: number;
+  path: string;
+}
+
 export interface Booking {
   id: number;
   city: string;
@@ -179,6 +221,10 @@ export interface Booking {
   booking_link: string;
   note: string;
   sort_order: number;
+  /** 主标签（单选）：景点 / 交通 / 餐厅 / 购物；旧数据缺省时按景点处理 */
+  category?: string;
+  /** 附件（图片/PDF 门票、确认单等） */
+  attachments?: BookingAttachment[];
 }
 
 export interface CreateBooking {
@@ -189,4 +235,5 @@ export interface CreateBooking {
   need_reservation: number;
   booking_link: string;
   note: string;
+  category?: string;
 }

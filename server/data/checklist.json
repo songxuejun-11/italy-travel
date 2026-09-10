@@ -306,5 +306,19 @@
     "checked": 0,
     "category": "杂物",
     "sort_order": 44
+  },
+  {
+    "id": 1788864650971,
+    "label": "苦茶子",
+    "checked": 0,
+    "category": "衣物",
+    "sort_order": 45
+  },
+  {
+    "id": 1788864650973,
+    "label": "大苦茶子",
+    "checked": 0,
+    "category": "2342342342342342342342",
+    "sort_order": 46
   }
 ]

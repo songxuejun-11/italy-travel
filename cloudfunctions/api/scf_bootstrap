@@ -1,0 +1,3 @@
+#!/bin/bash
+export NODE_PATH=/var/lang/node20/node_modules
+/var/lang/node20/bin/node dist/index.js

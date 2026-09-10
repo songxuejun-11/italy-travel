@@ -1,0 +1,3 @@
+# 云函数构建产物
+dist/
+node_modules/

@@ -8,7 +8,17 @@
     "need_reservation": 1,
     "booking_link": "",
     "note": "建议预约",
-    "sort_order": 1
+    "sort_order": 1,
+    "attachments": [
+      {
+        "id": 1788946510456,
+        "name": "IMG_5766.jpeg",
+        "type": "image/jpeg",
+        "size": 2075643,
+        "path": "/files/1788948366965-9qrplc.jpeg"
+      }
+    ],
+    "category": "景点"
   },
   {
     "id": 2,
