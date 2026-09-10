@@ -91,6 +91,18 @@ const KeyboardAwareScrollable = ({
   extraPadding,
   contentInsetBehaviorIOS,
 }: KeyboardAwareProps) => {
+  // Web 端直接使用原始滚动组件：KeyboardAware 系列内部依赖
+  // UIManager.measureInWindow 等原生专用 API，在 Web 上不存在，
+  // 输入框聚焦时会抛出异常导致页面崩溃
+  if (Platform.OS === 'web') {
+    const webAttrs = ((element as React.ReactElement).props ?? {}) as Record<string, unknown> & { innerRef?: unknown };
+    const { innerRef: webInnerRef, ...restWebAttrs } = webAttrs;
+    if (typeof webInnerRef === 'function') {
+      // 把 KeyboardAware 专用的 innerRef 回调转换为普通 ref，保持滚动器引用可用
+      return React.cloneElement(element as React.ReactElement<any>, { ...restWebAttrs, ref: webInnerRef });
+    }
+    return element;
+  }
   // 获取原始组件的 props
   const childAttrs = ((element as React.ReactElement).props ?? {}) as Record<string, unknown>;
   const originStyle = childAttrs['contentContainerStyle'];
@@ -215,7 +227,8 @@ const RawScreen = ({
 
   // 2. 滚动容器配置
   // 如果使用滚动容器，则使用 KeyboardAwareScrollView 替代原有的 ScrollView
-  const Container = useScrollContainer ? KeyboardAwareScrollView : View;
+  // Web 端不使用 KeyboardAwareScrollView，避免原生专用 API 在 Web 上崩溃
+  const Container = useScrollContainer ? (Platform.OS === 'web' ? ScrollView : KeyboardAwareScrollView) : View;
 
   const containerProps = useScrollContainer ? {
     contentContainerStyle: {
@@ -226,8 +239,13 @@ const RawScreen = ({
     keyboardShouldPersistTaps: 'handled' as const,
     showsVerticalScrollIndicator: false,
     keyboardDismissMode: 'on-drag' as const,
-    enableOnAndroid: true,
-    extraHeight: 100, // 替代原代码手动计算的 offset
+    // KeyboardAware 专属属性仅原生平台传递，Web 端的 ScrollView 不认识这些 props
+    ...(Platform.OS === 'web'
+      ? {}
+      : {
+          enableOnAndroid: true,
+          extraHeight: 100, // 替代原代码手动计算的 offset
+        }),
     // iOS 顶部白条修复：强制不自动添加顶部安全区
     ...(Platform.OS === 'ios'
       ? { contentInsetAdjustmentBehavior: contentInsetBehaviorIOS }
