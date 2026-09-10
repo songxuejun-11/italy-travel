@@ -11,6 +11,8 @@ import { WebView } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EditableText, EditableListItem, AddItemButton } from '@/components/EditableFields';
 import { useDataPolling } from '@/hooks/useDataPolling';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 
 const C = {
   primary: '#C75B39', secondary: '#2B5F83', gold: '#D4A853',
@@ -24,8 +26,12 @@ export default function RouteBookScreen() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [highlightedLoc, setHighlightedLoc] = useState<string | null>(null);
   const [packingChecked, setPackingChecked] = useState<Record<string, boolean>>({});
+  // 拖拽状态：当前被拖的卡片下标、实时目标位置；另存各卡片实测高度供让位换算
+  const [dragState, setDragState] = useState<{ from: number; target: number } | null>(null);
+  const [cardHeights, setCardHeights] = useState<number[]>([]);
   const insets = useSafeAreaInsets();
   const webviewRef = useRef<WebView>(null);
+  const contentScrollRef = useRef<ScrollView>(null);
 
   const loadData = useCallback(() => {
     getDays().then(setDays).catch(console.error);
@@ -33,6 +39,11 @@ export default function RouteBookScreen() {
 
   useEffect(() => { loadData(); }, [loadData]);
   useDataPolling(loadData, 5000);
+
+  // 切换 Day 时内容回到顶部
+  useEffect(() => {
+    contentScrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [activeDay]);
 
   const currentDay = days[activeDay];
   const content: DayContent = currentDay ? JSON.parse(currentDay.content_json) : {};
@@ -75,6 +86,25 @@ export default function RouteBookScreen() {
     locs.push({ name: '新地点', nameIt: '', cost: '免费', tags: ['景点'], order: locs.length + 1 });
     saveContent({ ...content, locations: locs });
   };
+
+  // 拖拽排序结束后重排数组，并重写 order 字段为 1..n
+  const moveLocation = (from: number, to: number) => {
+    if (from === to || !currentDay) return;
+    const locs = [...(content.locations || [])];
+    const [moved] = locs.splice(from, 1);
+    locs.splice(to, 0, moved);
+    saveContent({ ...content, locations: locs.map((l, i) => ({ ...l, order: i + 1 })) });
+  };
+
+  // 供 LocationCard 上报卡片实测高度，拖拽换位时换算让位距离用
+  const reportCardHeight = useCallback((i: number, h: number) => {
+    setCardHeights((prev) => {
+      if (prev[i] === h) return prev;
+      const next = [...prev];
+      next[i] = h;
+      return next;
+    });
+  }, []);
 
   const updateTransport = (type: 'intercity' | 'intracity', tIdx: number, updates: Partial<TransportItem>) => {
     const t = content.transport || { intercity: [], intracity: [] };
@@ -165,7 +195,7 @@ export default function RouteBookScreen() {
           <Text style={styles.dayHeaderDate}>{currentDay.date} {currentDay.weekday}</Text>
         </View>
 
-        <ScrollView style={styles.content} contentContainerStyle={styles.contentInner}>
+        <ScrollView ref={contentScrollRef} style={styles.content} contentContainerStyle={styles.contentInner}>
           {/* Overview */}
           {content.overview && (
             <View style={styles.overviewBlock}>
@@ -173,18 +203,6 @@ export default function RouteBookScreen() {
                 <EditableText value={content.overview.text} multiline
                   onSave={(v) => saveContent({ ...content, overview: { ...content.overview!, text: v } })} />
               </View>
-              {content.overview.cityIntro !== undefined && (
-                <>
-                  <TouchableOpacity onPress={() => toggle('cityIntro')} style={styles.sectionToggle}>
-                    <Text style={styles.sectionToggleTitle}>城市介绍</Text>
-                    <FontAwesome6 name={expanded['cityIntro'] ? 'chevron-up' : 'chevron-down'} size={12} color={C.muted} />
-                  </TouchableOpacity>
-                  {expanded['cityIntro'] && (
-                    <EditableText value={content.overview.cityIntro || ''} multiline
-                      onSave={(v) => saveContent({ ...content, overview: { ...content.overview!, cityIntro: v } })} />
-                  )}
-                </>
-              )}
             </View>
           )}
 
@@ -210,15 +228,15 @@ export default function RouteBookScreen() {
               {expanded['acc'] && (
                 <View style={styles.expanded}>
                   <View style={styles.fieldRow}><Text style={styles.fieldLabel}>入住时间</Text>
-                    <EditableText value={acc.checkIn || ''} onSave={(v) => updateAccommodation({ checkIn: v })} style={{ flex: 1 }} /></View>
+                    <EditableText value={acc.checkIn || ''} multiline onSave={(v) => updateAccommodation({ checkIn: v })} style={{ flex: 1 }} editIconOnly /></View>
                   <View style={styles.fieldRow}><Text style={styles.fieldLabel}>地址</Text>
-                    <EditableText value={acc.address || ''} onSave={(v) => updateAccommodation({ address: v })} style={{ flex: 1 }} /></View>
+                    <EditableText value={acc.address || ''} multiline onSave={(v) => updateAccommodation({ address: v })} style={{ flex: 1 }} editIconOnly /></View>
                   <View style={styles.fieldRow}><Text style={styles.fieldLabel}>条件</Text>
-                    <EditableText value={acc.condition || ''} multiline onSave={(v) => updateAccommodation({ condition: v })} style={{ flex: 1 }} /></View>
+                    <EditableText value={acc.condition || ''} multiline onSave={(v) => updateAccommodation({ condition: v })} style={{ flex: 1 }} editIconOnly /></View>
                   <View style={styles.fieldRow}><Text style={styles.fieldLabel}>入住方式</Text>
-                    <EditableText value={acc.checkInMethod || ''} onSave={(v) => updateAccommodation({ checkInMethod: v })} style={{ flex: 1 }} placeholder="点击编辑" /></View>
+                    <EditableText value={acc.checkInMethod || ''} onSave={(v) => updateAccommodation({ checkInMethod: v })} style={{ flex: 1 }} placeholder="点击编辑" editIconOnly /></View>
                   {acc.tips && <View style={styles.fieldRow}><Text style={styles.fieldLabel}>备注</Text>
-                    <EditableText value={acc.tips} multiline onSave={(v) => updateAccommodation({ tips: v })} style={{ flex: 1 }} /></View>}
+                    <EditableText value={acc.tips} multiline onSave={(v) => updateAccommodation({ tips: v })} style={{ flex: 1 }} editIconOnly /></View>}
                 </View>
               )}
             </View>
@@ -286,8 +304,21 @@ export default function RouteBookScreen() {
                 <View style={styles.iconWrap}><FontAwesome6 name="map-pin" size={14} color={C.primary} /></View>
                 <Text style={styles.sectionLabel}>地点 ({content.locations.length})</Text>
               </View>
-              {content.locations.map((loc, i) => (
-                <LocationCard key={i} location={loc} index={i} isHighlighted={highlightedLoc === loc.name}
+              {(content.locations || []).map((loc, i) => (
+                <LocationCard key={i} location={loc} index={i} total={content.locations!.length}
+                  isHighlighted={highlightedLoc === loc.name}
+                  dragFrom={dragState?.from ?? null}
+                  dragTarget={dragState?.target ?? null}
+                  heights={cardHeights}
+                  onLayoutCard={(h) => reportCardHeight(i, h)}
+                  onDragStart={(from) => setDragState({ from, target: from })}
+                  onDragMove={(target) => setDragState((s) => (s ? { ...s, target } : s))}
+                  onDragEnd={(target) => {
+                    if (target >= 0 && dragState && dragState.target !== dragState.from) {
+                      moveLocation(dragState.from, dragState.target);
+                    }
+                    setDragState(null);
+                  }}
                   onPress={() => handleLocPress(loc.name)}
                   onUpdate={(updates) => updateLocation(i, updates)}
                   onDelete={() => {
@@ -356,115 +387,238 @@ export default function RouteBookScreen() {
   );
 }
 
-// Location Card with inline editing
-function LocationCard({ location, index, isHighlighted, onPress, onUpdate, onDelete }: {
-  location: Location; index: number; isHighlighted: boolean;
-  onPress: () => void; onUpdate: (u: Partial<Location>) => void; onDelete: () => void;
+// Location Card with inline editing and drag-to-reorder
+const LOC_CARD_MARGIN = 10; // 卡片间距，与 locCardWrap 的 marginTop 保持一致
+
+function LocationCard({ location, index, total, isHighlighted, dragFrom, dragTarget, heights,
+  onLayoutCard, onPress, onDragStart, onDragMove, onDragEnd, onUpdate, onDelete }: {
+  location: Location; index: number; total: number; isHighlighted: boolean;
+  dragFrom: number | null; dragTarget: number | null; heights: number[];
+  onLayoutCard: (h: number) => void;
+  onPress: () => void;
+  onDragStart: (from: number) => void;
+  onDragMove: (target: number) => void;
+  onDragEnd: (target: number) => void; // -1 表示手势被打断取消
+  onUpdate: (u: Partial<Location>) => void; onDelete: () => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [editModal, setEditModal] = useState(false);
 
+  const isDragged = dragFrom === index;
+
+  // 拖拽中的实时位移（被拖卡片跟随手指）
+  const transY = useSharedValue(0);
+  // 让位位移（其余卡片为目标卡片腾出位置）
+  const shift = useSharedValue(0);
+  const lastTarget = useSharedValue(-1);
+  const ended = useSharedValue(false);
+
+  // 本卡片作为"邻居"应让出的距离
+  let neighborShift = 0;
+  if (dragFrom !== null && dragTarget !== null && dragFrom !== dragTarget && !isDragged) {
+    const slotH = (heights[dragFrom] || 0) + LOC_CARD_MARGIN;
+    if (dragTarget > dragFrom && index > dragFrom && index <= dragTarget) neighborShift = -slotH;
+    else if (dragTarget < dragFrom && index >= dragTarget && index < dragFrom) neighborShift = slotH;
+  }
+
+  useEffect(() => {
+    if (dragFrom === null) {
+      // 拖拽结束：立即归零，与数组换位同一帧生效，避免二次滑动
+      shift.value = 0;
+      transY.value = 0;
+    } else {
+      shift.value = withTiming(neighborShift, { duration: 150 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dragFrom, neighborShift]);
+
+  const panGesture = Gesture.Pan()
+    .hitSlop({ top: 12, bottom: 12, left: 12, right: 12 })
+    .onStart(() => {
+      ended.value = false;
+      runOnJS(onDragStart)(index);
+    })
+    .onUpdate((e) => {
+      transY.value = e.translationY;
+      // 以卡片中心经过为准，换算当前拖到的目标槽位
+      const d = e.translationY;
+      let t = index; let cum = 0;
+      if (d >= 0) {
+        for (let j = index + 1; j < total; j++) {
+          cum += (heights[j - 1] || 0) + LOC_CARD_MARGIN;
+          if (d >= cum) t = j; else break;
+        }
+      } else {
+        for (let j = index - 1; j >= 0; j--) {
+          cum -= (heights[j] || 0) + LOC_CARD_MARGIN;
+          if (d <= cum) t = j; else break;
+        }
+      }
+      if (t !== lastTarget.value) {
+        lastTarget.value = t;
+        runOnJS(onDragMove)(t);
+      }
+    })
+    .onEnd(() => {
+      ended.value = true;
+      const T = lastTarget.value >= 0 ? lastTarget.value : index;
+      // 先平滑滑入目标槽位（位移 = 被挤开卡片的高度和），动画结束后再提交换位
+      let off = 0; let cum = 0;
+      if (T > index) {
+        for (let j = index + 1; j <= T; j++) cum += (heights[j] || 0) + LOC_CARD_MARGIN;
+        off = cum;
+      } else if (T < index) {
+        for (let j = T; j < index; j++) cum += (heights[j] || 0) + LOC_CARD_MARGIN;
+        off = -cum;
+      }
+      transY.value = withTiming(off, { duration: 150 }, () => {
+        runOnJS(onDragEnd)(T);
+      });
+    })
+    .onFinalize(() => {
+      if (!ended.value) {
+        // 手势被系统打断：弹回原位并取消
+        transY.value = withTiming(0, { duration: 150 });
+        runOnJS(onDragEnd)(-1);
+      }
+      lastTarget.value = -1;
+      ended.value = false;
+    });
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: transY.value + shift.value }],
+  }));
+
   return (
-    <View style={[styles.locCard, isHighlighted && styles.locCardHl]}>
-      <TouchableOpacity onPress={onPress} style={styles.locCardHeader}>
-        <View style={styles.locIdx}><Text style={styles.locIdxText}>{index + 1}</Text></View>
-        <View style={styles.locInfo}>
-          <Text style={styles.locName}>{location.name}</Text>
-          {location.nameIt ? <Text style={styles.locNameIt}>{location.nameIt}</Text> : null}
-          <View style={styles.locMeta}>
-            {location.hours ? <Text style={styles.locMetaText}>{location.hours}</Text> : null}
-            {location.cost ? <Text style={[styles.locMetaText, styles.locCost]}>{location.cost}</Text> : null}
-            {location.duration ? <Text style={styles.locMetaText}>{location.duration}</Text> : null}
-          </View>
-          <View style={styles.locTags}>
-            {(location.tags || []).map((tag, i) => (
-              <View key={i} style={[styles.tag, tag === '美食' && styles.tagFood, tag === '购物' && styles.tagShop]}>
-                <Text style={[styles.tagText, tag === '美食' && styles.tagTextFood, tag === '购物' && styles.tagTextShop]}>{tag}</Text>
+    <View style={styles.locCardWrap} onLayout={(e) => onLayoutCard(e.nativeEvent.layout.height)}>
+      <Animated.View style={[styles.locCard, isHighlighted && styles.locCardHl, isDragged && styles.locCardDragActive, animStyle]}>
+        <View style={styles.locCardRow}>
+          <TouchableOpacity onPress={onPress} style={styles.locCardHeader}>
+            <View style={styles.locIdx}><Text style={styles.locIdxText}>{index + 1}</Text></View>
+            <View style={styles.locInfo}>
+              <View style={styles.locTitleRow}>
+                <Text style={styles.locName}>{location.name}</Text>
+                {(location.tags || []).map((tag, i) => (
+                  <View key={i} style={[styles.tag, tag === '美食' && styles.tagFood, tag === '购物' && styles.tagShop]}>
+                    <Text style={[styles.tagText, tag === '美食' && styles.tagTextFood, tag === '购物' && styles.tagTextShop]}>{tag}</Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-        </View>
-      </TouchableOpacity>
-
-      {location.tips ? (
-        <View style={styles.locTipsRow}>
-          <FontAwesome6 name="lightbulb" size={11} color={C.gold} />
-          <Text style={styles.locTipsText}>{location.tips}</Text>
-        </View>
-      ) : null}
-
-      <View style={styles.locActions}>
-        <TouchableOpacity style={styles.locNavBtn} onPress={() => {
-          const q = location.lat && location.lng ? `${location.lat},${location.lng}` : `${location.name} Italy`;
-          const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
-          if (Platform.OS === 'web') { /* @ts-ignore */ window.open(url, '_blank'); }
-        }}>
-          <FontAwesome6 name="location-arrow" size={11} color={C.secondary} />
-          <Text style={styles.locNavText}>导航</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.locActionBtn} onPress={() => setEditModal(true)}>
-          <FontAwesome6 name="pen" size={11} color={C.muted} />
-          <Text style={styles.locActionText}>编辑</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.locActionBtn} onPress={() => setExpanded(!expanded)}>
-          <FontAwesome6 name={expanded ? 'chevron-up' : 'chevron-down'} size={11} color={C.muted} />
-          <Text style={styles.locActionText}>{expanded ? '收起' : '详情'}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.locActionBtn} onPress={onDelete}>
-          <FontAwesome6 name="trash-can" size={11} color={C.danger} />
-        </TouchableOpacity>
-      </View>
-
-      {expanded && location.intro && (
-        <View style={styles.locIntro}><Text style={styles.locIntroText}>{location.intro}</Text></View>
-      )}
-
-      {/* Edit Modal */}
-      <Modal visible={editModal} transparent animationType="slide">
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>编辑地点</Text>
-                <TouchableOpacity onPress={() => setEditModal(false)}>
-                  <FontAwesome6 name="xmark" size={18} color={C.muted} />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.modalBody}>
-                <Text style={styles.fieldLabel}>中文名称</Text>
-                <TextInput style={styles.fieldInput} defaultValue={location.name}
-                  onChangeText={(v) => onUpdate({ name: v })} />
-                <Text style={styles.fieldLabel}>意大利文名称</Text>
-                <TextInput style={styles.fieldInput} defaultValue={location.nameIt || ''}
-                  onChangeText={(v) => onUpdate({ nameIt: v })} />
-                <Text style={styles.fieldLabel}>营业时间</Text>
-                <TextInput style={styles.fieldInput} defaultValue={location.hours || ''}
-                  onChangeText={(v) => onUpdate({ hours: v })} placeholder="如 9:00-18:00" placeholderTextColor={C.muted} />
-                <Text style={styles.fieldLabel}>人均消费</Text>
-                <TextInput style={styles.fieldInput} defaultValue={location.cost || ''}
-                  onChangeText={(v) => onUpdate({ cost: v })} placeholder="如 50EUR / 免费" placeholderTextColor={C.muted} />
-                <Text style={styles.fieldLabel}>预计游玩时间</Text>
-                <TextInput style={styles.fieldInput} defaultValue={location.duration || ''}
-                  onChangeText={(v) => onUpdate({ duration: v })} placeholder="如 2h" placeholderTextColor={C.muted} />
-                <Text style={styles.fieldLabel}>Tips</Text>
-                <TextInput style={[styles.fieldInput, { minHeight: 60 }]} defaultValue={location.tips || ''}
-                  onChangeText={(v) => onUpdate({ tips: v })} multiline placeholder="注意事项" placeholderTextColor={C.muted} />
-                <Text style={styles.fieldLabel}>景点介绍</Text>
-                <TextInput style={[styles.fieldInput, { minHeight: 80 }]} defaultValue={location.intro || ''}
-                  onChangeText={(v) => onUpdate({ intro: v })} multiline placeholder="景点介绍" placeholderTextColor={C.muted} />
-              </ScrollView>
-              <View style={styles.modalFooter}>
-                <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={() => setEditModal(false)}>
-                  <Text style={styles.saveBtnText}>完成</Text>
-                </TouchableOpacity>
+              {location.nameIt ? <Text style={styles.locNameIt}>{location.nameIt}</Text> : null}
+              <View style={styles.locMeta}>
+                {location.hours ? (
+                  <View style={styles.locMetaItem}>
+                    <FontAwesome6 name="clock" size={10} color={C.muted} />
+                    <Text style={styles.locMetaText}>{location.hours}</Text>
+                  </View>
+                ) : null}
+                {location.cost ? (
+                  <View style={styles.locMetaItem}>
+                    <FontAwesome6 name="wallet" size={10} color={C.primary} />
+                    <Text style={[styles.locMetaText, styles.locCost]}>{location.cost}</Text>
+                  </View>
+                ) : null}
+                {location.duration ? (
+                  <View style={styles.locMetaItem}>
+                    <FontAwesome6 name="hourglass" size={10} color={C.muted} />
+                    <Text style={styles.locMetaText}>{location.duration}</Text>
+                  </View>
+                ) : null}
               </View>
             </View>
+          </TouchableOpacity>
+          <GestureDetector gesture={panGesture}>
+            <Animated.View
+              style={[styles.dragHandle, Platform.OS === 'web' ? ({ cursor: 'grab' } as object) : null]}
+              hitSlop={{ top: 12, bottom: 12, left: 10, right: 10 }}
+            >
+              <FontAwesome6 name="grip-lines" size={13} color={C.muted} />
+            </Animated.View>
+          </GestureDetector>
+        </View>
+
+        {location.tips ? (
+          <View style={styles.locTipsRow}>
+            <FontAwesome6 name="lightbulb" size={11} color={C.gold} />
+            <Text style={styles.locTipsText}>{location.tips}</Text>
           </View>
-        </KeyboardAvoidingView>
-      </Modal>
+        ) : null}
+
+        <View style={styles.locActions}>
+          <TouchableOpacity style={styles.locActionBtn} onPress={() => setExpanded(!expanded)}>
+            <FontAwesome6 name={expanded ? 'chevron-up' : 'chevron-down'} size={11} color={C.muted} />
+            <Text style={styles.locActionText}>{expanded ? '收起' : '景点介绍'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.locNavBtn} onPress={() => {
+            const q = location.lat && location.lng ? `${location.lat},${location.lng}` : `${location.name} Italy`;
+            const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+            if (Platform.OS === 'web') { /* @ts-ignore */ window.open(url, '_blank'); }
+          }}>
+            <FontAwesome6 name="location-arrow" size={11} color={C.secondary} />
+            <Text style={styles.locNavText}>导航</Text>
+          </TouchableOpacity>
+          <View style={styles.locActionsRight}>
+            <TouchableOpacity style={styles.locIconBtn} onPress={() => setEditModal(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <FontAwesome6 name="pen" size={11} color={C.muted} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.locIconBtn} onPress={onDelete} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <FontAwesome6 name="trash-can" size={11} color={C.danger} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {expanded && location.intro && (
+          <View style={styles.locIntro}><Text style={styles.locIntroText}>{location.intro}</Text></View>
+        )}
+
+        {/* Edit Modal */}
+        <Modal visible={editModal} transparent animationType="slide">
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>编辑地点</Text>
+                  <TouchableOpacity onPress={() => setEditModal(false)}>
+                    <FontAwesome6 name="xmark" size={18} color={C.muted} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.modalBody}>
+                  <Text style={styles.fieldLabel}>中文名称</Text>
+                  <TextInput style={styles.fieldInput} defaultValue={location.name}
+                    onChangeText={(v) => onUpdate({ name: v })} />
+                  <Text style={styles.fieldLabel}>意大利文名称</Text>
+                  <TextInput style={styles.fieldInput} defaultValue={location.nameIt || ''}
+                    onChangeText={(v) => onUpdate({ nameIt: v })} />
+                  <Text style={styles.fieldLabel}>营业时间</Text>
+                  <TextInput style={styles.fieldInput} defaultValue={location.hours || ''}
+                    onChangeText={(v) => onUpdate({ hours: v })} placeholder="如 9:00-18:00" placeholderTextColor={C.muted} />
+                  <Text style={styles.fieldLabel}>人均消费</Text>
+                  <TextInput style={styles.fieldInput} defaultValue={location.cost || ''}
+                    onChangeText={(v) => onUpdate({ cost: v })} placeholder="如 50EUR / 免费" placeholderTextColor={C.muted} />
+                  <Text style={styles.fieldLabel}>预计游玩时间</Text>
+                  <TextInput style={styles.fieldInput} defaultValue={location.duration || ''}
+                    onChangeText={(v) => onUpdate({ duration: v })} placeholder="如 2h" placeholderTextColor={C.muted} />
+                  <Text style={styles.fieldLabel}>Tips</Text>
+                  <TextInput style={[styles.fieldInput, { minHeight: 60 }]} defaultValue={location.tips || ''}
+                    onChangeText={(v) => onUpdate({ tips: v })} multiline placeholder="注意事项" placeholderTextColor={C.muted} />
+                  <Text style={styles.fieldLabel}>景点介绍</Text>
+                  <TextInput style={[styles.fieldInput, { minHeight: 80 }]} defaultValue={location.intro || ''}
+                    onChangeText={(v) => onUpdate({ intro: v })} multiline placeholder="景点介绍" placeholderTextColor={C.muted} />
+                </ScrollView>
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity style={[styles.modalBtn, styles.saveBtn]} onPress={() => setEditModal(false)}>
+                    <Text style={styles.saveBtnText}>完成</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
+        </Modal>
+      </Animated.View>
     </View>
   );
 }
+
 
 // Transport inline editor
 function TransportEditor({ item, index, badge, badgeColor, onSave, onDelete }: {
@@ -548,8 +702,6 @@ const styles = StyleSheet.create({
 
   overviewBlock: { marginBottom: 16 },
   overviewHighlight: { backgroundColor: '#FFF3E0', borderRadius: 14, padding: 16, borderLeftWidth: 4, borderLeftColor: C.gold },
-  sectionToggle: { flexDirection: 'row', alignItems: 'center', marginTop: 12, paddingVertical: 8 },
-  sectionToggleTitle: { fontSize: 14, fontWeight: '600', color: C.text, flex: 1 },
 
   section: { backgroundColor: C.surface, borderRadius: 16, marginBottom: 12, padding: 16, shadowColor: C.primary, shadowOpacity: 0.04, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 1 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center' },
@@ -576,18 +728,26 @@ const styles = StyleSheet.create({
   packingText: { fontSize: 13, color: C.text },
   packingTextChecked: { textDecorationLine: 'line-through', color: C.muted },
 
-  locCard: { backgroundColor: C.bg, borderRadius: 14, padding: 14, marginTop: 10, borderWidth: 1, borderColor: 'transparent' },
+  locCardWrap: { marginTop: LOC_CARD_MARGIN },
+  locCard: { backgroundColor: C.bg, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: 'transparent' },
   locCardHl: { borderColor: C.primary, backgroundColor: '#FFF3E0' },
-  locCardHeader: { flexDirection: 'row' },
+  locCardDragActive: {
+    shadowColor: '#2C1810', shadowOpacity: 0.25, shadowRadius: 12, shadowOffset: { width: 0, height: 6 },
+    elevation: 8, zIndex: 10,
+  },
+  locCardRow: { flexDirection: 'row', alignItems: 'flex-start' },
+  dragHandle: { width: 26, height: 26, justifyContent: 'center', alignItems: 'center', marginLeft: 6, marginTop: 2 },
+  locCardHeader: { flexDirection: 'row', flex: 1 },
   locIdx: { width: 24, height: 24, borderRadius: 12, backgroundColor: C.primary, justifyContent: 'center', alignItems: 'center', marginRight: 10, marginTop: 2 },
   locIdxText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
   locInfo: { flex: 1 },
+  locTitleRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
   locName: { fontSize: 15, fontWeight: '700', color: C.text },
   locNameIt: { fontSize: 12, color: C.muted, marginTop: 1, fontStyle: 'italic' },
-  locMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 6 },
+  locMeta: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 16, rowGap: 4, marginTop: 6 },
+  locMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   locMetaText: { fontSize: 12, color: C.muted },
   locCost: { color: C.primary, fontWeight: '600' },
-  locTags: { flexDirection: 'row', gap: 6, marginTop: 6 },
   tag: { backgroundColor: '#EBF5FB', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   tagFood: { backgroundColor: '#FFF3E0' },
   tagShop: { backgroundColor: '#F3E5F5' },
@@ -597,6 +757,8 @@ const styles = StyleSheet.create({
   locTipsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, marginTop: 8 },
   locTipsText: { flex: 1, fontSize: 12, color: C.text, lineHeight: 18 },
   locActions: { flexDirection: 'row', gap: 14, marginTop: 10, alignItems: 'center' },
+  locActionsRight: { flexDirection: 'row', alignItems: 'center', gap: 18, marginLeft: 'auto' },
+  locIconBtn: { padding: 4 },
   locNavBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   locNavText: { fontSize: 11, color: C.secondary, fontWeight: '500' },
   locActionBtn: { flexDirection: 'row', alignItems: 'center', gap: 3 },

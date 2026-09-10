@@ -41,6 +41,7 @@ interface BookingRecord {
   booking_link: string;
   note: string;
   sort_order: number;
+  category: string;
 }
 
 export function seedIfNeeded() {
@@ -355,12 +356,12 @@ export function seedIfNeeded() {
 
   // Bookings
   const bookings: BookingRecord[] = [
-    { id: 1, city: '巴勒莫', date: '9/24', attraction: '诺曼王宫&帕拉蒂尼礼拜堂', price: '19€', need_reservation: 1, booking_link: '', note: '建议预约', sort_order: 1 },
-    { id: 2, city: '那不勒斯', date: '9/30', attraction: '圣塞维诺小堂', price: '12€', need_reservation: 1, booking_link: '', note: '必须提前官网预约，提前两天会再放一次票，线下买不到票', sort_order: 2 },
-    { id: 3, city: '庞贝', date: '10/1', attraction: '庞贝古城', price: '500 RMB', need_reservation: 1, booking_link: '', note: '已含讲解', sort_order: 3 },
-    { id: 4, city: '罗马', date: '10/3', attraction: '梵蒂冈博物馆', price: '25€（免费日0€）', need_reservation: 1, booking_link: '', note: '每月最后一个周日免费，可现场排队领票；线下可尝试下午排队或谷歌地图搜"tours"买团票', sort_order: 4 },
-    { id: 5, city: '罗马', date: '10/4', attraction: '博尔盖塞美术馆', price: '免费日0€', need_reservation: 1, booking_link: '', note: '每月第一个周日免费', sort_order: 5 },
-    { id: 6, city: '罗马', date: '10/4', attraction: '罗马斗兽场', price: '通票18€', need_reservation: 1, booking_link: '', note: '邪道购票：使用Roma Pass（先去斗兽场官网查Roma Pass通道预约，锁定后购买Roma Pass，入场时先展示斗兽场预约单再刷Roma Pass二维码）', sort_order: 6 },
+    { id: 1, city: '巴勒莫', date: '9/24', attraction: '诺曼王宫&帕拉蒂尼礼拜堂', price: '19€', need_reservation: 1, booking_link: '', note: '建议预约', sort_order: 1, category: '景点' },
+    { id: 2, city: '那不勒斯', date: '9/30', attraction: '圣塞维诺小堂', price: '12€', need_reservation: 1, booking_link: '', note: '必须提前官网预约，提前两天会再放一次票，线下买不到票', sort_order: 2, category: '景点' },
+    { id: 3, city: '庞贝', date: '10/1', attraction: '庞贝古城', price: '500 RMB', need_reservation: 1, booking_link: '', note: '已含讲解', sort_order: 3, category: '景点' },
+    { id: 4, city: '罗马', date: '10/3', attraction: '梵蒂冈博物馆', price: '25€（免费日0€）', need_reservation: 1, booking_link: '', note: '每月最后一个周日免费，可现场排队领票；线下可尝试下午排队或谷歌地图搜"tours"买团票', sort_order: 4, category: '景点' },
+    { id: 5, city: '罗马', date: '10/4', attraction: '博尔盖塞美术馆', price: '免费日0€', need_reservation: 1, booking_link: '', note: '每月第一个周日免费', sort_order: 5, category: '景点' },
+    { id: 6, city: '罗马', date: '10/4', attraction: '罗马斗兽场', price: '通票18€', need_reservation: 1, booking_link: '', note: '邪道购票：使用Roma Pass（先去斗兽场官网查Roma Pass通道预约，锁定后购买Roma Pass，入场时先展示斗兽场预约单再刷Roma Pass二维码）', sort_order: 6, category: '景点' },
   ];
   writeStore('bookings', bookings);
 }

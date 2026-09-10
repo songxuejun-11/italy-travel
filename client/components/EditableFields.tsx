@@ -21,12 +21,15 @@ export function EditableText({
   placeholder,
   multiline,
   style,
+  editIconOnly,
 }: {
   value: string;
   onSave: (val: string) => void;
   placeholder?: string;
   multiline?: boolean;
   style?: Record<string, unknown>;
+  /** 为 true 时文本不可点击进入编辑，只能点右侧笔形图标进入 */
+  editIconOnly?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(value);
@@ -41,6 +44,11 @@ export function EditableText({
     }
   };
 
+  const startEditing = () => {
+    setEditing(true);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
   if (editing) {
     return (
       <TextInput
@@ -49,7 +57,8 @@ export function EditableText({
         value={text}
         onChangeText={setText}
         onBlur={handleSave}
-        onSubmitEditing={handleSave}
+        onSubmitEditing={multiline ? undefined : handleSave}
+        blurOnSubmit={!multiline}
         placeholder={placeholder}
         placeholderTextColor={COLORS.muted}
         multiline={multiline}
@@ -58,16 +67,28 @@ export function EditableText({
     );
   }
 
-  return (
-    <TouchableOpacity
-      style={[styles.displayBox, style as object]}
-      onPress={() => { setEditing(true); setTimeout(() => inputRef.current?.focus(), 50); }}
-      activeOpacity={0.7}
-    >
+  const content = (
+    <>
       <Text style={styles.displayText} numberOfLines={multiline ? undefined : 1}>
-        {value || placeholder || '点击编辑'}
+        {value || placeholder || (editIconOnly ? '' : '点击编辑')}
       </Text>
-      <FontAwesome6 name="pen" size={10} color={COLORS.muted} style={styles.editIcon} />
+      <TouchableOpacity
+        onPress={startEditing}
+        style={styles.iconPress}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <FontAwesome6 name="pen" size={10} color={COLORS.muted} style={styles.editIcon} />
+      </TouchableOpacity>
+    </>
+  );
+
+  if (editIconOnly) {
+    return <View style={[styles.displayBox, style as object]}>{content}</View>;
+  }
+
+  return (
+    <TouchableOpacity style={[styles.displayBox, style as object]} onPress={startEditing} activeOpacity={0.7}>
+      {content}
     </TouchableOpacity>
   );
 }
@@ -152,7 +173,8 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
   },
   displayText: { fontSize: 13, color: COLORS.text, flex: 1, lineHeight: 19 },
-  editIcon: { marginLeft: 6, opacity: 0.5 },
+  iconPress: { padding: 2, marginLeft: 4 },
+  editIcon: { opacity: 0.5 },
   editInput: {
     fontSize: 13, color: COLORS.text, padding: 8,
     borderRadius: 8, borderWidth: 1, borderColor: COLORS.primary,
